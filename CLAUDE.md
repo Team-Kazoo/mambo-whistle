@@ -221,6 +221,32 @@ console.table(stats)
 - One commit per logical change
 - Update PROJECT_STATUS.md when completing major tasks
 
+## Anti-Patterns to AVOID (Lessons Learned)
+
+### ❌ Anti-Pattern 1: "Zombie Code"
+**Problem**: Replacing CSS/HTML but leaving old code in files
+**Example**: Converting `.hero` to Tailwind but not deleting `.hero {}` from CSS
+**Rule**: DELETE old code in the SAME commit that adds the replacement
+**Why**: Creates confusion, bloats files, makes rollback harder
+
+### ❌ Anti-Pattern 2: "Pray It Works"
+**Problem**: Adding classes/code without verifying they function
+**Example**: Adding `prose` class without checking if Tailwind Typography plugin is loaded
+**Rule**: Test EVERY change in browser before committing
+**Why**: Untested code is broken code until proven otherwise
+
+### ❌ Anti-Pattern 3: "Partial Task Completion"
+**Problem**: Marking task as "done" when subtasks remain incomplete
+**Example**: Task says "modify JS if needed" but you skip checking/modifying JS
+**Rule**: Complete ALL parts of a task, or explicitly defer with justification
+**Why**: Partial work creates hidden debt and false progress
+
+### ❌ Anti-Pattern 4: "Over-Optimistic Commits"
+**Problem**: Commit messages that claim completion when work is incomplete
+**Example**: "Complete Phase 4" when T073-T074 are skipped
+**Rule**: Commit messages must be brutally honest about what was NOT done
+**Why**: Misleading commits waste future developer time
+
 ## Important Instruction Reminders
 
 **Do what has been asked; nothing more, nothing less.**

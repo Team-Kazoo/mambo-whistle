@@ -48,8 +48,11 @@ Minimize complexity. Avoid heavyweight frameworks and build tools unless absolut
 - NO bundlers initially (Vite/Webpack deferred to future phase)
 - Prefer copying minimal code over installing large dependencies
 - Select lightweight animation components only (< 10KB per component)
+- **CRITICAL**: When migrating CSS to Tailwind, DELETE old CSS rules immediately in the SAME commit
+- **NO ZOMBIE CODE**: Every line of replaced CSS MUST be removed, not left "for reference"
+- **VERIFY BEFORE COMMIT**: Test all implementations in browser, never assume classes work
 
-**Rationale:** Adding framework overhead contradicts performance-first principle and complicates deployment. Serve-based workflow is simple and fast.
+**Rationale:** Adding framework overhead contradicts performance-first principle and complicates deployment. Serve-based workflow is simple and fast. Zombie code is technical debt that compounds over time.
 
 ### IV. Accessibility by Design
 Music creation tools must be inclusive. Keyboard navigation and screen reader support are mandatory.
@@ -151,6 +154,11 @@ Ship incremental improvements quickly. Avoid analysis paralysis and perfectionis
 - Descriptive commit messages (imperative mood: "Add Tailwind", "Refactor instrument cards")
 - Run tests before committing (`npm test` must pass)
 - Tag releases: v0.3.1-ui-modernization
+- **CRITICAL PRE-COMMIT CHECKLIST**:
+  1. Did I delete old CSS that was replaced by Tailwind? (No zombie code)
+  2. Did I test the implementation in a browser? (No "pray it works" commits)
+  3. Did I complete ALL subtasks in the task description? (No partial implementations)
+  4. Did I document any deferred work clearly in commit message? (Honest disclosure)
 
 ### Testing Requirements
 - Vitest tests MUST pass before merging
