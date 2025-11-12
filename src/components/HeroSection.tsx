@@ -1,6 +1,14 @@
 import { Button } from '@/components/ui/button'
 
-export function HeroSection() {
+interface HeroSectionProps {
+  isPlaying: boolean
+  isReady: boolean
+  status: string
+  onStart: () => void
+  onStop: () => void
+}
+
+export function HeroSection({ isPlaying, isReady, status, onStart, onStop }: HeroSectionProps) {
   return (
     <section className="text-center py-12 px-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl shadow-lg mb-8 mt-6">
       <div className="text-6xl mb-4">🎵</div>
@@ -45,7 +53,9 @@ export function HeroSection() {
         <Button
           id="startBtn"
           size="lg"
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 animate-pulse"
+          onClick={onStart}
+          disabled={!isReady || isPlaying}
+          className={`bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 ${isPlaying ? 'hidden' : 'animate-pulse'}`}
         >
           <span className="text-2xl mr-2">▶️</span>
           <span>Start Playing</span>
@@ -54,13 +64,15 @@ export function HeroSection() {
           id="stopBtn"
           size="lg"
           variant="destructive"
-          className="hidden bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+          onClick={onStop}
+          disabled={!isPlaying}
+          className={`bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 ${!isPlaying ? 'hidden' : ''}`}
         >
           <span className="text-2xl mr-2">⏹️</span>
           <span>Stop</span>
         </Button>
         <p className="text-sm text-gray-500" id="recordingHelper">
-          No setup required • Works in your browser
+          {status}
         </p>
       </div>
     </section>
