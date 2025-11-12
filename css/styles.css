@@ -152,51 +152,7 @@ body {
     transform: translateX(20px);
 }
 
-/* Hero - 居中设计 */
-.hero {
-    text-align: center;
-    padding: 60px 20px 40px;
-}
-
-.hero-icon {
-    font-size: 80px;
-    margin-bottom: 20px;
-    animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-}
-
-.hero-title {
-    font-size: 52px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    margin-bottom: 16px;
-    background: var(--gradient);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.hero-subtitle {
-    font-size: 24px;
-    font-weight: 400;
-    color: var(--gray-600);
-    margin-bottom: 20px;
-}
-
-.hero-badge {
-    display: inline-block;
-    padding: 8px 16px;
-    background: var(--gray-100);
-    border-radius: 20px;
-    font-size: 14px;
-    color: var(--gray-600);
-    font-weight: 500;
-}
+/* Hero section now uses Tailwind CSS classes in index.html (removed redundant CSS) */
 
 /* 时间线步骤 - 现代化 */
 .steps-timeline {
