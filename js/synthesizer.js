@@ -643,3 +643,4 @@ class SynthesizerEngine {
 // 旧代码: const synthesizerEngine = new SynthesizerEngine();
 //
 // 为向后兼容，在 main.js 中通过 window.synthesizerEngine 暴露容器实例
+export { SynthesizerEngine };

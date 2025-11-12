@@ -780,3 +780,4 @@ class AudioIO {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { AudioIO };
 }
+export { AudioIO };

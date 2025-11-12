@@ -277,3 +277,4 @@ class PitchDetector {
 // 旧代码: const pitchDetector = new PitchDetector();
 //
 // 为向后兼容，在 main.js 中通过 window.pitchDetector 暴露容器实例
+export { PitchDetector };

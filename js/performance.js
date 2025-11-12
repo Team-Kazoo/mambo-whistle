@@ -278,3 +278,4 @@ class PerformanceMonitor {
 // 旧代码: const performanceMonitor = new PerformanceMonitor();
 //
 // 为向后兼容，在 main.js 中通过 window.performanceMonitor 暴露容器实例
+export { PerformanceMonitor };

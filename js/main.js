@@ -13,6 +13,11 @@ import { checkBrowserSupport, calculateRMS } from './utils/audio-utils.js';
 import { AppContainer } from './core/app-container.js';
 import { ExpressiveFeatures } from './expressive-features.js';
 import instrumentPresetManager from './config/instrument-presets.js';
+import { PitchDetector } from './pitch-detector.js';
+import { PerformanceMonitor } from './performance.js';
+import { SynthesizerEngine } from './synthesizer.js';
+import { ContinuousSynthEngine } from './continuous-synth.js';
+import { AudioIO } from './audio-io.js';
 
 class KazooApp {
     /**

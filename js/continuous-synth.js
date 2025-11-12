@@ -700,3 +700,4 @@ class ContinuousSynthEngine {
 // - 业务代码使用的是旧的模块级实例，容器实例无人使用
 //
 // 为向后兼容，在 main.js 中通过 window.continuousSynthEngine 暴露容器实例
+export { ContinuousSynthEngine };
