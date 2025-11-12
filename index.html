@@ -83,12 +83,12 @@
         <!-- 控制区 - 简化为2个卡片 -->
         <section class="control-section">
             <!-- 乐器选择 -->
-            <div class="control-card" id="instrumentSection">
-                <div class="control-header">
-                    <h2 class="section-title">Choose Your Instrument</h2>
-                    <div class="status-badge" id="instrumentStatus">Saxophone</div>
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6" id="instrumentSection">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Choose Your Instrument</h2>
+                    <div class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full" id="instrumentStatus">Saxophone</div>
                 </div>
-                <p class="section-subtitle">Each instrument has unique tonal characteristics. You can change it anytime!</p>
+                <p class="text-gray-600 mb-4">Each instrument has unique tonal characteristics. You can change it anytime!</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
                     <button class="instrument-btn bg-blue-50 border-2 border-blue-500 ring-2 ring-blue-500 rounded-xl p-4 flex flex-col items-center gap-2 transition-all duration-200 shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 active" data-instrument="saxophone">
@@ -135,20 +135,20 @@
             </div>
 
             <!-- 主控制按钮 -->
-            <div class="control-card" id="recordingSection">
-                <div class="control-header">
-                    <h2 class="section-title">Ready to Play?</h2>
-                    <div class="status-badge status-ready" id="recordingStatus">Ready</div>
+            <div class="bg-white rounded-xl shadow-md p-6 mb-6" id="recordingSection">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">Ready to Play?</h2>
+                    <div class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full status-ready" id="recordingStatus">Ready</div>
                 </div>
-                <p class="section-subtitle">Click the button below and start singing or humming. Your voice will be transformed in real-time!</p>
+                <p class="text-gray-600 mb-4">Click the button below and start singing or humming. Your voice will be transformed in real-time!</p>
 
                 <div class="text-center">
-                    <button class="btn btn-primary btn-large pulse" id="startBtn">
-                        <span class="btn-icon">▶️</span>
+                    <button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 animate-pulse-slow" id="startBtn">
+                        <span class="text-2xl mr-2">▶️</span>
                         <span>Start Playing</span>
                     </button>
-                    <button class="btn btn-danger btn-large hidden" id="stopBtn">
-                        <span class="btn-icon">⏹️</span>
+                    <button class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold text-lg px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200 hidden" id="stopBtn">
+                        <span class="text-2xl mr-2">⏹️</span>
                         <span>Stop</span>
                     </button>
                     <p class="helper-text" id="recordingHelper">No setup required • Works in your browser</p>
@@ -157,18 +157,18 @@
         </section>
 
         <!-- 状态显示 -->
-        <div class="status-bar hidden" id="statusBar">
-            <div class="status-item">
-                <div class="status-label">Status</div>
-                <div class="status-value" id="systemStatus">Ready</div>
+        <div class="grid grid-cols-3 gap-4 bg-white rounded-lg shadow p-4 mb-6 hidden" id="statusBar">
+            <div class="flex flex-col items-center">
+                <div class="text-sm text-gray-500 mb-1">Status</div>
+                <div class="text-lg font-semibold text-gray-900" id="systemStatus">Ready</div>
             </div>
-            <div class="status-item">
-                <div class="status-label">Latency</div>
-                <div class="status-value" id="latency">--</div>
+            <div class="flex flex-col items-center">
+                <div class="text-sm text-gray-500 mb-1">Latency</div>
+                <div class="text-lg font-semibold text-gray-900" id="latency">--</div>
             </div>
-            <div class="status-item">
-                <div class="status-label">Confidence</div>
-                <div class="status-value" id="confidence">--</div>
+            <div class="flex flex-col items-center">
+                <div class="text-sm text-gray-500 mb-1">Confidence</div>
+                <div class="text-lg font-semibold text-gray-900" id="confidence">--</div>
             </div>
         </div>
 
