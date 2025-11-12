@@ -523,7 +523,7 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
                                 console.log(`[PitchWorklet]  检测到音高: ${smoothedFrequency.toFixed(1)} Hz (${noteInfo.note}${noteInfo.octave}), 置信度: ${confidence.toFixed(2)}, articulation: ${articulation}`);
                             }
 
-                            //  构造完整 PitchFrame (11 字段)
+                            //  构造完整 PitchFrame (12 字段 + captureTime for latency measurement)
                             pitchInfo = {
                                 // 基础音高字段
                                 frequency: smoothedFrequency,
@@ -543,6 +543,9 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
 
                                 // 起音状态
                                 articulation: articulation,
+
+                                // 延迟测量 (毫秒时间戳)
+                                captureTime: currentTime * 1000,
 
                                 // 调试信息 (可选)
                                 _debug: {
