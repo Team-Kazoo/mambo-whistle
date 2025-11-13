@@ -128,6 +128,9 @@ export class AudioService {
     try {
       this.setState({ status: 'Starting audio...' })
 
+      // Resume Tone.js AudioContext (required after user gesture)
+      await this.synth.resume()
+
       // Start AudioIO
       const latencyInfo = await this.audioIO.start()
 
@@ -298,21 +301,38 @@ export class AudioService {
       return Promise.resolve()
     }
 
-    // Load Pitchfinder dynamically if not already loaded
-    await this.loadScript('https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/dist/pitchfinder.js')
+    // Try multiple CDN sources
+    const sources = [
+      'https://unpkg.com/pitchfinder@2.3.2/dist/pitchfinder.js',
+      'https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/dist/pitchfinder.min.js'
+    ]
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('Pitchfinder load timeout')), 5000)
-      const check = () => {
-        if ((window as any).Pitchfinder || (window as any).pitchfinder) {
-          clearTimeout(timeout)
-          resolve()
-        } else {
-          setTimeout(check, 100)
-        }
+    for (const src of sources) {
+      try {
+        await this.loadScript(src)
+
+        // Wait for library to be available
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Pitchfinder load timeout')), 3000)
+          const check = () => {
+            if ((window as any).Pitchfinder || (window as any).pitchfinder) {
+              clearTimeout(timeout)
+              resolve()
+            } else {
+              setTimeout(check, 100)
+            }
+          }
+          check()
+        })
+
+        return // Success
+      } catch (error) {
+        console.warn(`Failed to load Pitchfinder from ${src}`, error)
+        // Try next source
       }
-      check()
-    })
+    }
+
+    throw new Error('Failed to load Pitchfinder from all sources')
   }
 
   /**

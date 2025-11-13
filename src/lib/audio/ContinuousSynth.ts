@@ -96,9 +96,20 @@ export class ContinuousSynth {
   }
 
   /**
-   * Initialize synthesizer (must be called after user gesture)
+   * Initialize synthesizer (called during setup, before user gesture)
    */
   async initialize(): Promise<void> {
+    // Don't start Tone.js here - will be started on user gesture
+    // Just create the synth structure
+    this.createSynth(this.currentInstrument)
+
+    console.log('[ContinuousSynth] ✓ Ready (AudioContext will start on user interaction)')
+  }
+
+  /**
+   * Resume audio context and start noise (call after user gesture)
+   */
+  async resume(): Promise<void> {
     await Tone.start()
 
     // Start noise source
@@ -106,10 +117,7 @@ export class ContinuousSynth {
       this.noiseSource.start()
     }
 
-    // Create initial synth with current instrument
-    this.createSynth(this.currentInstrument)
-
-    console.log('[ContinuousSynth] ✓ Ready')
+    console.log('[ContinuousSynth] ✓ AudioContext resumed')
   }
 
   /**
