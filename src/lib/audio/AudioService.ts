@@ -301,39 +301,31 @@ export class AudioService {
       return Promise.resolve()
     }
 
-    // Try multiple CDN sources
-    const sources = [
-      'https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/lib/pitchfinder.js',
-      'https://unpkg.com/pitchfinder@2.3.2/lib/pitchfinder.js',
-      'https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/dist/index.js'
-    ]
+    // Use local pitchfinder-browser.js (same as legacy system)
+    const localSrc = '/js/lib/pitchfinder-browser.js'
 
-    for (const src of sources) {
-      try {
-        await this.loadScript(src)
+    try {
+      await this.loadScript(localSrc)
 
-        // Wait for library to be available
-        await new Promise<void>((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Pitchfinder load timeout')), 3000)
-          const check = () => {
-            if ((window as any).Pitchfinder || (window as any).pitchfinder) {
-              clearTimeout(timeout)
-              resolve()
-            } else {
-              setTimeout(check, 100)
-            }
+      // Wait for library to be available
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Pitchfinder load timeout')), 3000)
+        const check = () => {
+          if ((window as any).Pitchfinder || (window as any).pitchfinder) {
+            clearTimeout(timeout)
+            resolve()
+          } else {
+            setTimeout(check, 100)
           }
-          check()
-        })
+        }
+        check()
+      })
 
-        return // Success
-      } catch (error) {
-        console.warn(`Failed to load Pitchfinder from ${src}`, error)
-        // Try next source
-      }
+      return // Success
+    } catch (error) {
+      console.error(`Failed to load Pitchfinder from ${localSrc}`, error)
+      throw new Error('Failed to load Pitchfinder library')
     }
-
-    throw new Error('Failed to load Pitchfinder from all sources')
   }
 
   /**
