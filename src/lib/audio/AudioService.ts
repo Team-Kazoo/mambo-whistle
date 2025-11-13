@@ -1,24 +1,29 @@
 /**
- * AudioService - Minimal Working TypeScript Wrapper
+ * AudioService - Complete TypeScript Native Implementation
  *
- * Strategy: Wrap the existing JS audio system with a clean TypeScript API
- * This is a bridge solution until full TS migration is complete
- *
- * Design Principles:
- * 1. Single responsibility: Manage audio system lifecycle
- * 2. Observable state: Allow React hooks to subscribe to changes
- * 3. Type-safe: Provide TypeScript interfaces for all interactions
- * 4. Testable: Isolate browser dependencies
+ * Replaces the bridge pattern with a fully native TS audio system
+ * No longer loads legacy JS files - uses PitchDetector, AudioIO, and ContinuousSynth
  */
 
 import type { AudioState, InstrumentType, AudioMode } from '@/lib/types/audio'
+import { AudioIO, type AudioFrameData } from './AudioIO'
+import { PitchDetector } from './PitchDetector'
+import { ContinuousSynth } from './ContinuousSynth'
+import type { InstrumentName } from './instrument-presets'
 
 export type AudioStateChangeListener = (state: AudioState) => void
 
 export class AudioService {
   private state: AudioState
   private listeners: Set<AudioStateChangeListener> = new Set()
-  private initPromise: Promise<void> | null = null
+
+  // Audio components
+  private audioIO: AudioIO
+  private pitchDetector: PitchDetector
+  private synth: ContinuousSynth
+
+  // Pitch data (for future use)
+  // private lastPitchResult: PitchResult | null = null
 
   constructor() {
     this.state = {
@@ -30,6 +35,14 @@ export class AudioService {
       latency: 0,
       status: 'initializing'
     }
+
+    // Initialize audio components
+    this.audioIO = new AudioIO()
+    this.pitchDetector = new PitchDetector()
+    this.synth = new ContinuousSynth()
+
+    // Setup audio processing pipeline
+    this.setupAudioPipeline()
   }
 
   /**
@@ -41,7 +54,6 @@ export class AudioService {
 
   /**
    * Subscribe to state changes
-   * Returns unsubscribe function
    */
   subscribe(listener: AudioStateChangeListener): () => void {
     this.listeners.add(listener)
@@ -58,55 +70,31 @@ export class AudioService {
 
   /**
    * Initialize audio system
-   * Idempotent: safe to call multiple times
    */
   async initialize(): Promise<void> {
-    // Prevent multiple simultaneous initializations
-    if (this.initPromise) {
-      return this.initPromise
-    }
-
-    if (this.state.isReady) {
-      return Promise.resolve()
-    }
-
-    this.initPromise = this._doInitialize()
-    return this.initPromise
-  }
-
-  private async _doInitialize(): Promise<void> {
     try {
-      this.setState({ status: 'Loading audio libraries...' })
+      this.setState({ status: 'Loading Tone.js...' })
 
-      // Load Tone.js
-      await this.loadScript('/js/lib/tone.js')
+      // Wait for Tone.js to load (loaded via CDN in index.html or dynamically)
+      await this.waitForTone()
 
-      // Load Pitchfinder
-      await this.loadScript('/js/lib/pitchfinder-browser.js')
+      this.setState({ status: 'Loading Pitchfinder...' })
 
-      // Wait for libraries to be available
-      await this.waitForGlobal('Tone', 3000)
-      await this.waitForGlobal('Pitchfinder', 3000)
+      // Wait for Pitchfinder to load
+      await this.waitForPitchfinder()
 
       this.setState({ status: 'Initializing audio system...' })
 
-      // Dynamically import main.js (sets up window.container)
-      // @ts-ignore - Dynamic import of legacy JS module
-      await import('/js/main.js')
+      // Initialize components
+      await this.synth.initialize()
+      this.pitchDetector.initialize(44100)
 
-      // Wait for container to be created
-      await this.waitForGlobal('container', 2000)
-
-      // Manually create app if needed (DOMContentLoaded may not fire in React)
-      if (window.container && !window.app) {
-        console.log('[AudioService] Creating app manually...')
-        const app = window.container.get('app')
-        window.app = app
-        await app.initialize()
-      }
-
-      // Wait for app to be ready
-      await this.waitForGlobal('app', 3000)
+      // Configure AudioIO
+      this.audioIO.configure({
+        sampleRate: 44100,
+        useWorklet: true,
+        latencyHint: 'interactive'
+      })
 
       this.setState({
         isReady: true,
@@ -121,8 +109,6 @@ export class AudioService {
         status: `Error: ${message}`
       })
       throw error
-    } finally {
-      this.initPromise = null
     }
   }
 
@@ -135,25 +121,20 @@ export class AudioService {
     }
 
     if (this.state.isPlaying) {
-      console.warn('[AudioService] Already playing, ignoring start()')
+      console.warn('[AudioService] Already playing')
       return
     }
 
     try {
       this.setState({ status: 'Starting audio...' })
 
-      // Resume Tone.js AudioContext (required after user gesture)
-      if (window.Tone?.context?.state === 'suspended') {
-        await window.Tone.start()
-        console.log('[AudioService] AudioContext resumed')
-      }
-
-      // Start the legacy app
-      await window.app.start()
+      // Start AudioIO
+      const latencyInfo = await this.audioIO.start()
 
       this.setState({
         isPlaying: true,
-        status: `Playing (${this.state.currentInstrument})`
+        status: `Playing (${this.state.currentInstrument})`,
+        latency: latencyInfo.totalLatency
       })
 
       console.log('[AudioService] ✓ Started')
@@ -173,7 +154,11 @@ export class AudioService {
     }
 
     try {
-      window.app?.stop()
+      // Stop audio IO
+      this.audioIO.stop()
+
+      // Stop synthesizer
+      this.synth.stop()
 
       this.setState({
         isPlaying: false,
@@ -191,7 +176,7 @@ export class AudioService {
    * Change active instrument
    */
   changeInstrument(instrument: InstrumentType): void {
-    window.app?.changeInstrument?.(instrument)
+    this.synth.changeInstrument(instrument as InstrumentName)
 
     this.setState({
       currentInstrument: instrument,
@@ -207,26 +192,8 @@ export class AudioService {
    * Change playback mode
    */
   changeMode(mode: AudioMode): void {
-    if (window.app) {
-      window.app.useContinuousMode = (mode === 'continuous')
-    }
-
     this.setState({ currentMode: mode })
     console.log('[AudioService] Mode changed:', mode)
-  }
-
-  /**
-   * Update pitch data (called by external polling or callback)
-   */
-  updatePitchData(data: { note: string; frequency: number; confidence: number }): void {
-    this.setState({ pitchData: data })
-  }
-
-  /**
-   * Update latency (called by external monitoring)
-   */
-  updateLatency(latency: number): void {
-    this.setState({ latency })
   }
 
   /**
@@ -234,15 +201,125 @@ export class AudioService {
    */
   destroy(): void {
     this.stop()
+    this.audioIO.dispose()
+    this.synth.dispose()
     this.listeners.clear()
     console.log('[AudioService] Destroyed')
   }
 
-  // ========== Helper Methods ==========
+  // ========== Private Methods ==========
 
+  /**
+   * Setup audio processing pipeline
+   */
+  private setupAudioPipeline(): void {
+    this.audioIO.setOnFrame((frameData: AudioFrameData) => {
+      this.processAudioFrame(frameData)
+    })
+
+    this.audioIO.setOnStateChange((state, info) => {
+      if (state === 'started' && info) {
+        this.setState({ latency: info.totalLatency })
+      }
+    })
+
+    this.audioIO.setOnError((context, error) => {
+      console.error(`[AudioService] AudioIO error (${context}):`, error)
+      this.setState({ status: `Error: ${error.message}` })
+    })
+  }
+
+  /**
+   * Process audio frame
+   */
+  private processAudioFrame(frameData: AudioFrameData): void {
+    // Calculate RMS volume
+    const audioData = frameData.audioData
+    const rms = Math.sqrt(
+      audioData.reduce((sum, val) => sum + val * val, 0) / audioData.length
+    )
+
+    // Detect pitch
+    const pitchResult = this.pitchDetector.detect(audioData, rms)
+
+    if (pitchResult) {
+      // this.lastPitchResult = pitchResult
+
+      // Update pitch data in state
+      this.setState({
+        pitchData: {
+          note: pitchResult.note,
+          frequency: pitchResult.frequency,
+          confidence: pitchResult.confidence
+        }
+      })
+
+      // Update synthesizer
+      if (this.state.currentMode === 'continuous') {
+        this.synth.updatePitch({
+          frequency: pitchResult.frequency,
+          confidence: pitchResult.confidence,
+          volume: rms
+        })
+      }
+    }
+  }
+
+  /**
+   * Wait for Tone.js to load
+   */
+  private async waitForTone(): Promise<void> {
+    if ((window as any).Tone) {
+      return Promise.resolve()
+    }
+
+    // Load Tone.js dynamically if not already loaded
+    await this.loadScript('https://cdn.jsdelivr.net/npm/tone@15.1.22/build/Tone.js')
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Tone.js load timeout')), 5000)
+      const check = () => {
+        if ((window as any).Tone) {
+          clearTimeout(timeout)
+          resolve()
+        } else {
+          setTimeout(check, 100)
+        }
+      }
+      check()
+    })
+  }
+
+  /**
+   * Wait for Pitchfinder to load
+   */
+  private async waitForPitchfinder(): Promise<void> {
+    if ((window as any).Pitchfinder || (window as any).pitchfinder) {
+      return Promise.resolve()
+    }
+
+    // Load Pitchfinder dynamically if not already loaded
+    await this.loadScript('https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/dist/pitchfinder.js')
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Pitchfinder load timeout')), 5000)
+      const check = () => {
+        if ((window as any).Pitchfinder || (window as any).pitchfinder) {
+          clearTimeout(timeout)
+          resolve()
+        } else {
+          setTimeout(check, 100)
+        }
+      }
+      check()
+    })
+  }
+
+  /**
+   * Load external script
+   */
   private loadScript(src: string): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Check if already loaded
       if (document.querySelector(`script[src="${src}"]`)) {
         resolve()
         return
@@ -251,42 +328,13 @@ export class AudioService {
       const script = document.createElement('script')
       script.src = src
       script.onload = () => resolve()
-      script.onerror = () => reject(new Error(`Failed to load script: ${src}`))
+      script.onerror = () => reject(new Error(`Failed to load: ${src}`))
       document.head.appendChild(script)
     })
   }
-
-  private waitForGlobal(name: string, timeout: number = 5000): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const startTime = Date.now()
-
-      const check = () => {
-        if ((window as any)[name]) {
-          resolve()
-        } else if (Date.now() - startTime > timeout) {
-          reject(new Error(`Timeout waiting for global: ${name}`))
-        } else {
-          setTimeout(check, 100)
-        }
-      }
-
-      check()
-    })
-  }
 }
 
-// Extend window interface for legacy system
-declare global {
-  interface Window {
-    app?: any
-    container?: any
-    Tone?: any
-    Pitchfinder?: any
-    pitchfinder?: any
-  }
-}
-
-// Export singleton instance (optional, for convenience)
+// Singleton instance
 let instance: AudioService | null = null
 
 export function getAudioService(): AudioService {
