@@ -273,8 +273,8 @@ export class AudioIO {
     // Create source node
     this.sourceNode = this.audioContext.createMediaStreamSource(this.stream)
 
-    // Create worklet node
-    this.processorNode = new AudioWorkletNode(this.audioContext, 'pitch-processor')
+    // Create worklet node (must match registerProcessor name in pitch-worklet.js)
+    this.processorNode = new AudioWorkletNode(this.audioContext, 'pitch-detector')
 
     // Handle messages from worklet
     this.processorNode.port.onmessage = (event) => {
