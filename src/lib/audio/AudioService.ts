@@ -236,7 +236,13 @@ export class AudioService {
    * Process audio frame
    */
   private processAudioFrame(frameData: AudioFrameData): void {
-    // Calculate RMS volume
+    // In Worklet mode, use pre-computed PitchFrame from worklet
+    if (frameData.pitchFrame) {
+      this.processPitchFrame(frameData.pitchFrame)
+      return
+    }
+
+    // Fallback: ScriptProcessor mode - compute pitch in main thread
     const audioData = frameData.audioData
     const rms = Math.sqrt(
       audioData.reduce((sum, val) => sum + val * val, 0) / audioData.length
@@ -246,7 +252,7 @@ export class AudioService {
     const pitchResult = this.pitchDetector.detect(audioData, rms)
 
     if (pitchResult) {
-      // this.lastPitchResult = pitchResult
+      this.processPitchFrame(pitchResult)
 
       // Update pitch data in state
       this.setState({
@@ -257,14 +263,29 @@ export class AudioService {
         }
       })
 
-      // Update synthesizer
-      if (this.state.currentMode === 'continuous') {
-        this.synth.updatePitch({
-          frequency: pitchResult.frequency,
-          confidence: pitchResult.confidence,
-          volume: rms
-        })
+    }
+  }
+
+  /**
+   * Process pitch frame (from worklet or pitch detector)
+   */
+  private processPitchFrame(pitchFrame: any): void {
+    // Update state
+    this.setState({
+      pitchData: {
+        note: pitchFrame.note || '',
+        frequency: pitchFrame.frequency || 0,
+        confidence: pitchFrame.confidence || 0
       }
+    })
+
+    // Forward to synthesizer
+    if (this.state.currentMode === 'continuous') {
+      this.synth.updatePitch({
+        frequency: pitchFrame.frequency,
+        confidence: pitchFrame.confidence,
+        volume: pitchFrame.volume || pitchFrame.volumeLinear || 0
+      })
     }
   }
 

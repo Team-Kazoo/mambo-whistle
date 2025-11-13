@@ -7,10 +7,25 @@
  * - ScriptProcessorNode (fallback, compatibility)
  */
 
+export interface PitchFrame {
+  frequency: number
+  rawFrequency: number
+  note: string
+  octave: number
+  cents: number
+  confidence: number
+  volume: number
+  brightness?: number
+  breathiness?: number
+  articulation?: string
+  captureTime?: number
+}
+
 export interface AudioFrameData {
   audioData: Float32Array
   sampleRate: number
   timestamp: number
+  pitchFrame?: PitchFrame  // Complete PitchFrame from worklet
 }
 
 export interface LatencyInfo {
@@ -278,14 +293,21 @@ export class AudioIO {
 
     // Handle messages from worklet
     this.processorNode.port.onmessage = (event) => {
-      const { audioData, sampleRate, timestamp } = event.data
+      const { type, data, timestamp } = event.data
 
-      if (this.onFrameCallback) {
+      // Handle pitch-frame messages (complete PitchFrame object from worklet)
+      if (type === 'pitch-frame' && data && this.onFrameCallback) {
         this.onFrameCallback({
-          audioData: new Float32Array(audioData),
-          sampleRate,
-          timestamp
+          audioData: new Float32Array([]), // Worklet already processed, no raw audio needed
+          sampleRate: this.audioContext?.sampleRate || 44100,
+          timestamp,
+          pitchFrame: data // Pass complete PitchFrame object
         })
+      }
+
+      // Handle error messages
+      if (type === 'error' && this.onErrorCallback) {
+        this.onErrorCallback('worklet', new Error(data.message || 'Worklet error'))
       }
     }
 
