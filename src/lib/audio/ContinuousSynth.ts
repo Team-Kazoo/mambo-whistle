@@ -20,7 +20,7 @@ export interface PitchInfo {
 
 export class ContinuousSynth {
   private currentInstrument: InstrumentName = 'saxophone'
-  private currentSynth: Tone.Synth | null = null
+  private currentSynth: Tone.MonoSynth | null = null  // MonoSynth for continuous pitch control
   private isPlaying: boolean = false
   private currentFrequency: number = 0
 
@@ -137,8 +137,8 @@ export class ContinuousSynth {
       return
     }
 
-    // Create new synth with preset
-    this.currentSynth = new Tone.Synth({
+    // Create new synth with preset (MonoSynth for continuous frequency control)
+    this.currentSynth = new Tone.MonoSynth({
       oscillator: {
         type: preset.oscillator.type
       },
