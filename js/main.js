@@ -151,8 +151,12 @@ class KazooApp {
         const support = checkBrowserSupport();
 
         if (!support.isSupported) {
-            this.ui.warningBox.classList.remove('hidden');
-            this.ui.warningText.innerHTML = support.issues.map(i => `<li>${i}</li>`).join('');
+            if (this.ui.warningBox) {
+                this.ui.warningBox.classList.remove('hidden');
+            }
+            if (this.ui.warningText) {
+                this.ui.warningText.innerHTML = support.issues.map(i => `<li>${i}</li>`).join('');
+            }
         }
     }
 
@@ -201,7 +205,9 @@ class KazooApp {
 
                     // 更新状态徽章
                     const instrumentName = e.currentTarget.querySelector('.instrument-name').textContent;
-                    this.ui.instrumentStatus.textContent = instrumentName;
+                    if (this.ui.instrumentStatus) {
+                        this.ui.instrumentStatus.textContent = instrumentName;
+                    }
 
                     // 如果合成器已初始化，切换乐器（使用当前引擎）
                     if (this.currentEngine && this.currentEngine.currentSynth) {
@@ -214,13 +220,17 @@ class KazooApp {
         // 帮助
         if (this.ui.helpBtn) {
             this.ui.helpBtn.addEventListener('click', () => {
-                this.ui.helpContent.classList.toggle('show');
+                if (this.ui.helpContent) {
+                    this.ui.helpContent.classList.toggle('show');
+                }
             });
         }
 
         if (this.ui.helpToggle) {
             this.ui.helpToggle.addEventListener('click', () => {
-                this.ui.helpContent.classList.toggle('show');
+                if (this.ui.helpContent) {
+                    this.ui.helpContent.classList.toggle('show');
+                }
             });
         }
     }
@@ -230,7 +240,9 @@ class KazooApp {
      */
     switchMode(useContinuous) {
         this.useContinuousMode = useContinuous;
-        this.ui.modeText.textContent = useContinuous ? 'Continuous' : 'Legacy';
+        if (this.ui.modeText) {
+            this.ui.modeText.textContent = useContinuous ? 'Continuous' : 'Legacy';
+        }
 
         console.log(`[Mode Switch] ${useContinuous ? 'Continuous' : 'Legacy'} mode activated`);
     }
@@ -246,17 +258,23 @@ class KazooApp {
             //  启动音频系统（仅 AudioIO）
             await this._startWithAudioIO();
 
-            // 更新UI
+            // 更新UI (skip if elements don't exist - React mode)
             this.isRunning = true;
-            this.ui.startBtn.classList.add('hidden');
-            this.ui.stopBtn.classList.remove('hidden');
-            this.ui.statusBar.classList.remove('hidden');
-            this.ui.visualizer.classList.remove('hidden');
-            this.ui.systemStatus.textContent = `Running (${this.useContinuousMode ? 'Continuous' : 'Legacy'})`;
-            this.ui.systemStatus.classList.add('active');
-            this.ui.recordingStatus.textContent = 'Playing';
-            this.ui.recordingStatus.classList.add('status-ready');
-            this.ui.recordingHelper.textContent = 'Hum or sing to hear your voice transformed!';
+            if (this.ui.startBtn) this.ui.startBtn.classList.add('hidden');
+            if (this.ui.stopBtn) this.ui.stopBtn.classList.remove('hidden');
+            if (this.ui.statusBar) this.ui.statusBar.classList.remove('hidden');
+            if (this.ui.visualizer) this.ui.visualizer.classList.remove('hidden');
+            if (this.ui.systemStatus) {
+                this.ui.systemStatus.textContent = `Running (${this.useContinuousMode ? 'Continuous' : 'Legacy'})`;
+                this.ui.systemStatus.classList.add('active');
+            }
+            if (this.ui.recordingStatus) {
+                this.ui.recordingStatus.textContent = 'Playing';
+                this.ui.recordingStatus.classList.add('status-ready');
+            }
+            if (this.ui.recordingHelper) {
+                this.ui.recordingHelper.textContent = 'Hum or sing to hear your voice transformed!';
+            }
 
             console.log('✓ Kazoo Proto is running!');
 
@@ -266,12 +284,14 @@ class KazooApp {
             // 显示用户友好的错误提示
             this._showError(error.message || '启动失败，请检查麦克风权限和浏览器兼容性');
 
-            // 重置 UI 状态
-            this.ui.startBtn.classList.remove('hidden');
-            this.ui.stopBtn.classList.add('hidden');
-            this.ui.recordingStatus.textContent = 'Error';
-            this.ui.recordingStatus.classList.remove('status-ready');
-            this.ui.recordingStatus.classList.add('status-error');
+            // 重置 UI 状态 (skip if elements don't exist - React mode)
+            if (this.ui.startBtn) this.ui.startBtn.classList.remove('hidden');
+            if (this.ui.stopBtn) this.ui.stopBtn.classList.add('hidden');
+            if (this.ui.recordingStatus) {
+                this.ui.recordingStatus.textContent = 'Error';
+                this.ui.recordingStatus.classList.remove('status-ready');
+                this.ui.recordingStatus.classList.add('status-error');
+            }
         }
     }
 
@@ -495,13 +515,19 @@ class KazooApp {
             }
         }
 
-        // 更新UI
-        this.ui.startBtn.classList.remove('hidden');
-        this.ui.stopBtn.classList.add('hidden');
-        this.ui.systemStatus.textContent = 'Stopped';
-        this.ui.systemStatus.classList.remove('active');
-        this.ui.recordingStatus.textContent = 'Ready';
-        this.ui.recordingHelper.textContent = 'No setup required • Works in your browser';
+        // 更新UI - Add null checks for React mode
+        if (this.ui.startBtn) this.ui.startBtn.classList.remove('hidden');
+        if (this.ui.stopBtn) this.ui.stopBtn.classList.add('hidden');
+        if (this.ui.systemStatus) {
+            this.ui.systemStatus.textContent = 'Stopped';
+            this.ui.systemStatus.classList.remove('active');
+        }
+        if (this.ui.recordingStatus) {
+            this.ui.recordingStatus.textContent = 'Ready';
+        }
+        if (this.ui.recordingHelper) {
+            this.ui.recordingHelper.textContent = 'No setup required • Works in your browser';
+        }
 
         console.log('Kazoo Proto stopped');
     }
@@ -539,10 +565,16 @@ class KazooApp {
             }
         }
 
-        // 更新显示
-        this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
-        this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
-        this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
+        // 更新显示 - Add null checks for React mode
+        if (this.ui.currentNote) {
+            this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
+        }
+        if (this.ui.currentFreq) {
+            this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
+        }
+        if (this.ui.confidence) {
+            this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
+        }
 
         //  驱动当前引擎 (优先使用 processPitchFrame，回退到 processPitch)
         if (this.currentEngine.processPitchFrame) {
@@ -560,7 +592,9 @@ class KazooApp {
         // 更新性能指标
         this.performanceMonitor.updateFPS();
         const metrics = this.performanceMonitor.getMetrics();
-        this.ui.latency.textContent = `${metrics.totalLatency}ms`;
+        if (this.ui.latency) {
+            this.ui.latency.textContent = `${metrics.totalLatency}ms`;
+        }
     }
 
     /**
@@ -600,10 +634,16 @@ class KazooApp {
                 }
             }
 
-            // 更新显示
-            this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
-            this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
-            this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
+            // 更新显示 - Add null checks for React mode
+            if (this.ui.currentNote) {
+                this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
+            }
+            if (this.ui.currentFreq) {
+                this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
+            }
+            if (this.ui.confidence) {
+                this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
+            }
 
             //  驱动当前引擎 (优先使用 processPitchFrame，回退到 processPitch)
             if (this.currentEngine.processPitchFrame) {
@@ -622,7 +662,9 @@ class KazooApp {
         // 更新性能指标
         this.performanceMonitor.updateFPS();
         const metrics = this.performanceMonitor.getMetrics();
-        this.ui.latency.textContent = `${metrics.totalLatency}ms`;
+        if (this.ui.latency) {
+            this.ui.latency.textContent = `${metrics.totalLatency}ms`;
+        }
     }
 
     /**
@@ -660,10 +702,16 @@ class KazooApp {
         // 性能监控开始
         this.performanceMonitor.startProcessing();
 
-        // 更新 UI 显示
-        this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
-        this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
-        this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
+        // 更新 UI 显示 - Add null checks for React mode
+        if (this.ui.currentNote) {
+            this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
+        }
+        if (this.ui.currentFreq) {
+            this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
+        }
+        if (this.ui.confidence) {
+            this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
+        }
 
         // 直接传递给合成器 (PitchFrame 已包含所有表现力特征)
         if (this.currentEngine.processPitchFrame) {
@@ -682,7 +730,9 @@ class KazooApp {
 
         // 更新延迟显示
         const metrics = this.performanceMonitor.getMetrics();
-        this.ui.latency.textContent = `${metrics.totalLatency}ms`;
+        if (this.ui.latency) {
+            this.ui.latency.textContent = `${metrics.totalLatency}ms`;
+        }
     }
 
     /**

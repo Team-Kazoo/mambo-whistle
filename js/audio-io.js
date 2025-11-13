@@ -91,7 +91,7 @@ class AudioIO {
     async start() {
         if (this.isRunning) {
             console.warn('[AudioIO] 音频系统已在运行');
-            return;
+            return this.getLatencyInfo(); // Return current state
         }
 
         const startTime = performance.now();
@@ -156,16 +156,23 @@ class AudioIO {
 
         console.log('🛑 [AudioIO] 停止音频系统');
 
+        // Set running flag to false FIRST to stop message processing
+        this.isRunning = false;
+
         try {
             // 断开所有节点
             if (this.processorNode) {
-                this.processorNode.disconnect();
-
-                // 清理 ScriptProcessor 回调
-                if (this.mode === 'script-processor') {
+                // 对于 AudioWorklet,先发送停止消息
+                if (this.mode === 'worklet' && this.processorNode.port) {
+                    this.processorNode.port.postMessage({ type: 'stop' });
+                    // 清理 AudioWorklet 消息监听器
+                    this.processorNode.port.onmessage = null;
+                } else if (this.mode === 'script-processor') {
+                    // 清理 ScriptProcessor 回调
                     this.processorNode.onaudioprocess = null;
                 }
 
+                this.processorNode.disconnect();
                 this.processorNode = null;
             }
 
@@ -180,7 +187,14 @@ class AudioIO {
                 this.stream = null;
             }
 
-            this.isRunning = false;
+            // Note: Don't close AudioContext - it will be reused on next start()
+            // Suspend it to save resources
+            if (this.audioContext && this.audioContext.state === 'running') {
+                this.audioContext.suspend().catch(err => {
+                    console.warn('[AudioIO] AudioContext suspend warning:', err);
+                });
+            }
+
             this._notifyStateChange('stopped', null);
 
             console.log(' [AudioIO] 已停止');
@@ -398,6 +412,17 @@ class AudioIO {
             throw new Error('浏览器不支持 Web Audio API');
         }
 
+        // Reuse existing AudioContext if available and not closed
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            console.log('[AudioIO] Reusing existing AudioContext');
+            // Resume if suspended
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+            return;
+        }
+
+        // Create new AudioContext only if needed
         this.audioContext = new AudioContextClass({
             latencyHint: this.config.latencyHint,
             sampleRate: this.config.sampleRate
@@ -577,6 +602,11 @@ class AudioIO {
      * @private
      */
     _handleWorkletMessage(event) {
+        // Ignore messages if audio system is stopped
+        if (!this.isRunning) {
+            return;
+        }
+
         const { type, data, timestamp } = event.data;
 
         switch (type) {

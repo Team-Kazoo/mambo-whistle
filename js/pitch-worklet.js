@@ -263,6 +263,9 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
 
         console.log('[PitchWorklet] Worklet 处理器已创建');
 
+        // Stop flag
+        this.isRunning = true;
+
         // 配置参数 (从主线程接收,等待 'config' 消息更新)
         //  修复: 不再使用硬编码默认值,等待主线程下发集中式配置
         this.config = {
@@ -432,6 +435,11 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
      * 每 128 samples 调用一次 (@ 44.1kHz ≈ 2.9ms)
      */
     process(inputs, outputs, parameters) {
+        // Check if stopped
+        if (!this.isRunning) {
+            return false; // Stop processing
+        }
+
         const startTime = currentTime;
 
         // 获取输入音频 (单声道)
@@ -636,6 +644,11 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
 
             case 'control':
                 this._handleControl(event.data);
+                break;
+
+            case 'stop':
+                console.log('[PitchWorklet] 🛑 Stopping worklet processing');
+                this.isRunning = false;
                 break;
 
             default:
