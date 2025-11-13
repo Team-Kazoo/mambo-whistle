@@ -6,8 +6,8 @@
  */
 
 import type { AudioState, InstrumentType, AudioMode } from '@/lib/types/audio'
-import { AudioIO, type AudioFrameData } from './AudioIO'
-import { PitchDetector } from './PitchDetector'
+import { AudioIO, type AudioFrameData, type PitchFrame } from './AudioIO'
+import { PitchDetector, type PitchResult } from './PitchDetector'
 import { ContinuousSynth } from './ContinuousSynth'
 import type { InstrumentName } from './instrument-presets'
 
@@ -69,9 +69,15 @@ export class AudioService {
   }
 
   /**
-   * Initialize audio system
+   * Initialize audio system (idempotent - safe to call multiple times)
    */
   async initialize(): Promise<void> {
+    // Prevent double initialization (React StrictMode mounts twice)
+    if (this.state.isReady) {
+      console.log('[AudioService] Already initialized, skipping')
+      return
+    }
+
     try {
       this.setState({ status: 'Loading Tone.js...' })
 
@@ -269,7 +275,7 @@ export class AudioService {
   /**
    * Process pitch frame (from worklet or pitch detector)
    */
-  private processPitchFrame(pitchFrame: any): void {
+  private processPitchFrame(pitchFrame: PitchFrame | PitchResult): void {
     // Update state
     this.setState({
       pitchData: {
