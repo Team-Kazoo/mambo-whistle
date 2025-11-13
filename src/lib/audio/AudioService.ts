@@ -303,8 +303,9 @@ export class AudioService {
 
     // Try multiple CDN sources
     const sources = [
-      'https://unpkg.com/pitchfinder@2.3.2/dist/pitchfinder.js',
-      'https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/dist/pitchfinder.min.js'
+      'https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/lib/pitchfinder.js',
+      'https://unpkg.com/pitchfinder@2.3.2/lib/pitchfinder.js',
+      'https://cdn.jsdelivr.net/npm/pitchfinder@2.3.2/dist/index.js'
     ]
 
     for (const src of sources) {
