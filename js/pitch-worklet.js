@@ -22,6 +22,11 @@
 /**
  * CooleyTukeyFFT - Fast Fourier Transform Implementation
  *
+ * ⚠️ IMPORTANT: This is a copy of js/utils/fft.js for AudioWorklet compatibility
+ * AudioWorklet cannot use ES6 imports, so we must inline the code here.
+ * The canonical implementation is in js/utils/fft.js (exported for testing).
+ * Any changes must be synchronized between both files.
+ *
  * Radix-2 Decimation-In-Time (DIT) Cooley-Tukey algorithm
  * Based on: https://gist.github.com/antimatter15/0349ca7d479236fdcdbb
  *

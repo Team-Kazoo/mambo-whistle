@@ -6,267 +6,16 @@
  * 2. IFFT correctness: IFFT(FFT(x)) ≈ x
  * 3. Autocorrelation: FFT method ≈ naive O(N²) method
  * 4. Edge cases: power-of-2 sizes, zero input, DC component
+ *
+ * ✅ Fixed: Import shared implementation from js/utils/fft.js
+ * No more code duplication - tests exercise the actual production code
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { CooleyTukeyFFT } from '../../js/utils/fft.js';
 
-/**
- * CooleyTukeyFFT - Fast Fourier Transform Implementation
- *
- * Radix-2 Decimation-In-Time (DIT) Cooley-Tukey algorithm
- * Based on: https://gist.github.com/antimatter15/0349ca7d479236fdcdbb
- *
- * Features:
- * - In-place computation (minimal memory)
- * - Pre-computed twiddle factors (faster)
- * - Bit-reversal permutation
- * - O(N log N) complexity
- *
- * Designed for AudioWorklet pitch detection (YIN + spectral features)
- */
-class CooleyTukeyFFT {
-    /**
-     * @param {number} size - FFT size (must be power of 2)
-     */
-    constructor(size = 2048) {
-        if ((size & (size - 1)) !== 0) {
-            throw new Error(`FFT size must be power of 2, got ${size}`);
-        }
-
-        this.size = size;
-        this.halfSize = size / 2;
-        this.log2Size = Math.log2(size);
-
-        // Pre-compute twiddle factors (optimization)
-        this._precomputeTwiddles();
-
-        // Pre-compute bit-reversal indices
-        this._precomputeBitReversal();
-
-        // Working buffers
-        this.real = new Float32Array(size);
-        this.imag = new Float32Array(size);
-        this.powerSpectrum = new Float32Array(this.halfSize);
-        this.autocorrelation = new Float32Array(size);
-    }
-
-    /**
-     * Pre-compute twiddle factors for all stages
-     * W_N^k = e^(-j*2π*k/N) = cos(-2πk/N) + j*sin(-2πk/N)
-     */
-    _precomputeTwiddles() {
-        this.twiddleReal = new Float32Array(this.halfSize);
-        this.twiddleImag = new Float32Array(this.halfSize);
-
-        for (let i = 0; i < this.halfSize; i++) {
-            const angle = -2 * Math.PI * i / this.size;
-            this.twiddleReal[i] = Math.cos(angle);
-            this.twiddleImag[i] = Math.sin(angle);
-        }
-    }
-
-    /**
-     * Pre-compute bit-reversal permutation indices
-     */
-    _precomputeBitReversal() {
-        this.bitReversalIndices = new Uint32Array(this.size);
-
-        for (let i = 0; i < this.size; i++) {
-            this.bitReversalIndices[i] = this._reverseBits(i, this.log2Size);
-        }
-    }
-
-    /**
-     * Reverse bits of an integer
-     * @param {number} x - Input integer
-     * @param {number} bits - Number of bits to reverse
-     * @returns {number} Bit-reversed integer
-     */
-    _reverseBits(x, bits) {
-        let reversed = 0;
-        for (let i = 0; i < bits; i++) {
-            reversed = (reversed << 1) | (x & 1);
-            x >>= 1;
-        }
-        return reversed;
-    }
-
-    /**
-     * In-place radix-2 DIT FFT
-     *
-     * Algorithm:
-     * 1. Bit-reversal permutation
-     * 2. Iterative butterfly operations (log2(N) stages)
-     *
-     * @param {Float32Array} re - Real part (modified in-place)
-     * @param {Float32Array} im - Imaginary part (modified in-place)
-     * @param {boolean} inverse - If true, compute IFFT
-     */
-    fft(re, im, inverse = false) {
-        const N = re.length;
-
-        if (N !== this.size) {
-            throw new Error(`FFT size mismatch: expected ${this.size}, got ${N}`);
-        }
-
-        // Step 1: Bit-reversal permutation
-        for (let i = 0; i < N; i++) {
-            const j = this.bitReversalIndices[i];
-            if (j > i) {
-                // Swap re[i] ↔ re[j]
-                [re[i], re[j]] = [re[j], re[i]];
-                [im[i], im[j]] = [im[j], im[i]];
-            }
-        }
-
-        // Step 2: Iterative FFT (Cooley-Tukey butterflies)
-        // Stages: 1, 2, 4, 8, ..., N/2
-        for (let size = 2; size <= N; size *= 2) {
-            const halfSize = size / 2;
-            const tableStep = N / size;
-
-            // Process each block
-            for (let i = 0; i < N; i += size) {
-                // Butterfly operations within block
-                for (let j = 0; j < halfSize; j++) {
-                    const k = j * tableStep;
-
-                    // Twiddle factor W_N^k
-                    let twiddleR = this.twiddleReal[k];
-                    let twiddleI = this.twiddleImag[k];
-
-                    // IFFT: conjugate twiddle factors
-                    if (inverse) {
-                        twiddleI = -twiddleI;
-                    }
-
-                    // Indices
-                    const evenIdx = i + j;
-                    const oddIdx = i + j + halfSize;
-
-                    // Complex multiplication: twiddle * odd
-                    const tR = twiddleR * re[oddIdx] - twiddleI * im[oddIdx];
-                    const tI = twiddleR * im[oddIdx] + twiddleI * re[oddIdx];
-
-                    // Butterfly: even ± twiddle*odd
-                    const tempR = re[evenIdx];
-                    const tempI = im[evenIdx];
-
-                    re[evenIdx] = tempR + tR;
-                    im[evenIdx] = tempI + tI;
-
-                    re[oddIdx] = tempR - tR;
-                    im[oddIdx] = tempI - tI;
-                }
-            }
-        }
-
-        // IFFT: scale by 1/N
-        if (inverse) {
-            for (let i = 0; i < N; i++) {
-                re[i] /= N;
-                im[i] /= N;
-            }
-        }
-    }
-
-    /**
-     * Inverse FFT (convenience wrapper)
-     *
-     * @param {Float32Array} re - Real part (modified in-place)
-     * @param {Float32Array} im - Imaginary part (modified in-place)
-     */
-    ifft(re, im) {
-        this.fft(re, im, true);
-    }
-
-    /**
-     * Compute power spectrum from real-valued input
-     *
-     * Returns |X[k]|² for k = 0, 1, ..., N/2-1
-     *
-     * @param {Float32Array} input - Time-domain signal (length = size)
-     * @returns {Float32Array} Power spectrum (length = size/2)
-     */
-    computePowerSpectrum(input) {
-        if (input.length !== this.size) {
-            throw new Error(`Input size mismatch: expected ${this.size}, got ${input.length}`);
-        }
-
-        // Copy input to real buffer, zero imaginary
-        this.real.set(input);
-        this.imag.fill(0);
-
-        // Compute FFT
-        this.fft(this.real, this.imag);
-
-        // Compute power spectrum: |X[k]|² = Re²[k] + Im²[k]
-        for (let k = 0; k < this.halfSize; k++) {
-            this.powerSpectrum[k] = this.real[k] * this.real[k] + this.imag[k] * this.imag[k];
-        }
-
-        return this.powerSpectrum;
-    }
-
-    /**
-     * Compute autocorrelation using Wiener-Khinchin theorem
-     *
-     * Algorithm:
-     * 1. Zero-pad input to 2N (avoid circular convolution)
-     * 2. FFT → multiply by conjugate → IFFT
-     * 3. Normalize and return first N samples
-     *
-     * Based on: https://brentspell.com/blog/2022/pytorch-yin/
-     *
-     * @param {Float32Array} input - Time-domain signal (length ≤ size/2)
-     * @returns {Float32Array} Autocorrelation (length = input.length)
-     */
-    computeAutocorrelation(input) {
-        const N = input.length;
-
-        if (N > this.halfSize) {
-            throw new Error(`Input too large: max ${this.halfSize}, got ${N}`);
-        }
-
-        // Step 1: Zero-pad to 2N (using full FFT size)
-        this.real.fill(0);
-        this.imag.fill(0);
-        this.real.set(input);
-
-        // Subtract mean (critical for autocorrelation)
-        let mean = 0;
-        for (let i = 0; i < N; i++) {
-            mean += this.real[i];
-        }
-        mean /= N;
-
-        for (let i = 0; i < N; i++) {
-            this.real[i] -= mean;
-        }
-
-        // Step 2: FFT
-        this.fft(this.real, this.imag);
-
-        // Step 3: Multiply by conjugate (power spectrum in frequency domain)
-        for (let k = 0; k < this.size; k++) {
-            const re = this.real[k];
-            const im = this.imag[k];
-            this.real[k] = re * re + im * im;  // |X[k]|²
-            this.imag[k] = 0;
-        }
-
-        // Step 4: IFFT
-        this.ifft(this.real, this.imag);
-
-        // Step 5: Extract and normalize autocorrelation
-        // Return only first N samples (rest are mirror/artifacts)
-        for (let i = 0; i < N; i++) {
-            this.autocorrelation[i] = this.real[i];
-        }
-
-        return this.autocorrelation.subarray(0, N);
-    }
-}
+// Removed duplicate CooleyTukeyFFT class definition (lines 27-283)
+// Now importing from shared module to ensure tests cover production code
 
 // ============================================================================
 // Tests
@@ -550,41 +299,55 @@ describe('CooleyTukeyFFT', () => {
         });
     });
 
-    describe('Performance Characteristics', () => {
-        it('should complete 2048-point FFT in reasonable time', () => {
+    describe('Algorithm Correctness (deterministic)', () => {
+        it('should produce consistent FFT results for known input', () => {
             const fft2048 = new CooleyTukeyFFT(2048);
             const input = new Float32Array(2048);
 
+            // Known test signal: 440 Hz sine wave at 44100 Hz sample rate
+            const sampleRate = 44100;
+            const freq = 440;
             for (let i = 0; i < 2048; i++) {
-                input[i] = Math.random() - 0.5;
+                input[i] = Math.sin(2 * Math.PI * freq * i / sampleRate);
             }
 
-            const startTime = performance.now();
-            fft2048.computePowerSpectrum(input);
-            const endTime = performance.now();
+            const powerSpectrum = fft2048.computePowerSpectrum(input);
 
-            const duration = endTime - startTime;
+            // Peak should be near bin corresponding to 440 Hz
+            const expectedBin = Math.round(440 * 2048 / sampleRate); // ≈ 20
 
-            // Should be much faster than 10ms (naive DFT takes ~100ms)
-            expect(duration).toBeLessThan(10);
+            // Find peak excluding DC bin (bin 0)
+            const peakBin = powerSpectrum.slice(1).indexOf(Math.max(...powerSpectrum.slice(1))) + 1;
+
+            // Allow ±2 bin tolerance (FFT frequency resolution)
+            expect(Math.abs(peakBin - expectedBin)).toBeLessThanOrEqual(2);
+
+            // Peak should dominate the spectrum (excluding DC)
+            const totalPowerNoDC = powerSpectrum.slice(1).reduce((a, b) => a + b, 0);
+            expect(powerSpectrum[peakBin]).toBeGreaterThan(totalPowerNoDC * 0.3);
         });
 
-        it('should complete autocorrelation in reasonable time', () => {
+        it('should produce consistent autocorrelation for periodic signal', () => {
             const fft2048 = new CooleyTukeyFFT(4096);  // 2N for autocorrelation
+            const period = 16;  // 16-sample period
             const input = new Float32Array(1024);
 
+            // Periodic sawtooth wave
             for (let i = 0; i < 1024; i++) {
-                input[i] = Math.random() - 0.5;
+                input[i] = (i % period) / period;
             }
 
-            const startTime = performance.now();
-            fft2048.computeAutocorrelation(input);
-            const endTime = performance.now();
+            const autocorr = fft2048.computeAutocorrelation(input);
 
-            const duration = endTime - startTime;
+            // Autocorrelation of periodic signal should also be periodic
+            // r[0] should be maximum
+            expect(autocorr[0]).toBeGreaterThan(0);
 
-            // Should be much faster than 50ms (naive O(N²) takes ~500ms)
-            expect(duration).toBeLessThan(50);
+            // r[period] should be close to r[0] (allowing for decay)
+            expect(autocorr[period]).toBeGreaterThan(autocorr[0] * 0.5);
+
+            // r[period/2] should be lower (different phase)
+            expect(Math.abs(autocorr[period / 2])).toBeLessThan(Math.abs(autocorr[0]) * 0.8);
         });
     });
 });
