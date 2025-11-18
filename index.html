@@ -1,321 +1,509 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kazoo Proto - Voice to Instrument</title>
 
-    <!-- Tailwind CSS CDN (Play CDN for rapid prototyping) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
-            colors: {
-              primary: '#1e3a8a',
-              secondary: '#6b7280',
-              accent: '#3b82f6',
-              'apple-base': '#f5f5f7',
-              'apple-dark': '#1d1d1f',
-              'apple-blue': '#0071e3',
-              'apple-blue-hover': '#0077ed',
-              'apple-text-gray': '#86868b'
-            },
             fontFamily: {
-              sans: [
-                '"Inter"',
-                '"SF Pro Display"',
-                '"SF Pro Text"',
-                '-apple-system',
-                'BlinkMacSystemFont',
-                'system-ui',
-                'sans-serif'
-              ]
+              sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Inter"', 'sans-serif'],
+              display: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', 'sans-serif']
             },
-            letterSpacing: {
-              tighter: '-0.05em',
-              tight: '-0.025em',
-              wide: '0.025em'
-            },
-            transitionTimingFunction: {
-              'apple-ease': 'cubic-bezier(0.4, 0, 0.2, 1)'
+            colors: {
+              apple: { text: '#1D1D1F', gray: '#86868B', sub: '#6e6e73' }
             },
             animation: {
-              'pulse-slow': 'pulse-slow 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+              'blob': 'blob 10s infinite',
+              'shine': 'shine 2s infinite',
+            },
+            keyframes: {
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' }
+              },
+              shine: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+              }
+            },
+            backgroundImage: {
+              'google-gradient': 'linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853)',
             }
           }
         }
       }
     </script>
 
-    <!-- Custom styles (overrides and animations) -->
+    <!-- Custom Styles -->
+    <style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            /* 性能优化：防止滚动时的重绘抖动 */
+            overflow-x: hidden;
+        }
+        
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* 玻璃拟态优化 - 减少重绘开销 */
+        .glass {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+        
+        /* 强制硬件加速，解决闪烁问题 */
+        .gpu-accelerated {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        /* === Google 边框修复核心代码 === */
+        .instrument-btn {
+            outline: none !important; /* 移除那个蓝色的直角框 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card-inner {
+            position: relative;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+            z-index: 10;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        /* 默认状态下隐藏彩色边框 */
+        .card-border-gradient {
+            position: absolute;
+            inset: -3px; /* 边框宽度 */
+            border-radius: 26px; /* 比内部圆角大一点 */
+            background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
+            background-size: 300% 300%;
+            z-index: 0; /* 在卡片下面 */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            animation: borderRotate 4s linear infinite;
+        }
+
+        /* 激活状态：显示边框，卡片变白 */
+        .instrument-btn.active .card-border-gradient {
+            opacity: 1;
+        }
+        
+        .instrument-btn.active .card-inner {
+            background: #FFFFFF; /* 选中时卡片变实心白，对比度更高 */
+            border-color: transparent;
+            transform: scale(0.98); /* 轻微按压感 */
+        }
+
+        @keyframes borderRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 开关样式 */
+        .toggle-switch { position: relative; width: 44px; height: 24px; display: inline-block; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e5e5e5; transition: .4s; border-radius: 34px;
+        }
+        .toggle-slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px;
+            background-color: white; transition: .4s; border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        input:checked + .toggle-slider { background-color: #34A853; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* 表单交互 */
+        .input-group:focus-within { box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2); border-color: #4285F4; }
+    </style>
+    
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-[#f5f5f7] text-[#1d1d1f] font-sans antialiased">
-    <div class="pointer-events-none fixed inset-0 z-0 opacity-80">
-        <div class="absolute -top-32 right-[-10%] h-96 w-96 rounded-[32px] bg-[#dfe8ff] blur-[140px]"></div>
-        <div class="absolute bottom-[-10%] left-[-10%] h-80 w-80 rounded-[32px] bg-[#ffe2f3] blur-[120px]"></div>
+<body class="bg-[#F5F5F7] text-[#1D1D1F] min-h-screen relative">
+
+    <!-- 背景：添加 gpu-accelerated 防止闪烁 -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div class="absolute top-[-10%] left-[10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-50 animate-blob gpu-accelerated"></div>
+        <div class="absolute top-[-10%] right-[10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-50 animate-blob animation-delay-2000 gpu-accelerated"></div>
+        <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-50 animate-blob animation-delay-4000 gpu-accelerated"></div>
+        <div class="absolute inset-0 bg-white/40 backdrop-blur-[1px]"></div>
     </div>
 
     <!-- 导航栏 -->
-    <nav class="apple-glass-light fixed top-0 left-0 right-0 z-50 border-b border-black/5">
-        <div class="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-            <a href="#" class="flex items-center gap-3" aria-label="Kazoo Proto home">
-                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white text-lg">🎧</div>
+    <nav class="fixed top-0 inset-x-0 z-50 glass border-b-0 transition-all duration-300">
+        <div class="max-w-6xl mx-auto px-6 h-[64px] flex items-center justify-between">
+            <a href="#" class="flex items-center gap-3 group no-underline">
+                <div class="w-9 h-9 bg-black rounded-xl flex items-center justify-center text-lg shadow-lg text-white group-hover:scale-105 transition-transform">
+                    🎧
+                </div>
                 <div>
-                    <p class="text-base font-semibold tracking-tight text-[#1d1d1f]">Kazoo Proto</p>
-                    <p class="text-xs uppercase tracking-[0.35em] text-[#86868b]">Realtime Voice</p>
+                    <p class="font-display font-bold text-[18px] tracking-tight leading-none text-[#1d1d1f]">Kazoo Proto</p>
+                    <p class="text-[10px] font-medium text-apple-gray tracking-widest uppercase mt-0.5">Local Engine</p>
                 </div>
             </a>
-            <div class="hidden items-center gap-6 text-sm md:flex">
-                <a href="#instrumentSection" class="nav-link" data-scroll-target="instrumentSection">Instruments</a>
-                <a href="#recordingSection" class="nav-link" data-scroll-target="recordingSection">Control</a>
-                <a href="#visualizer" class="nav-link" data-scroll-target="visualizer">Visualizer</a>
-                <a href="#tipsSection" class="nav-link" data-scroll-target="tipsSection">Tips</a>
+
+            <div class="hidden md:flex items-center gap-8 text-[13px] font-medium text-apple-sub">
+                <a href="#instrumentSection" class="hover:text-[#1D1D1F] transition-colors">Instruments</a>
+                <a href="#visualizer" class="hover:text-[#1D1D1F] transition-colors">Visualizer</a>
+                <a href="#tipsSection" class="hover:text-[#1D1D1F] transition-colors">Tips</a>
             </div>
-            <div class="flex items-center gap-3">
-                <div class="flex items-center gap-3 rounded-full bg-white/80 px-4 py-1.5 text-sm font-medium text-[#1d1d1f] shadow-sm">
-                    <span class="text-[#86868b]">Mode</span>
-                    <label class="toggle-switch">
+
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3 bg-white/50 px-4 py-2 rounded-full border border-white/60 shadow-sm">
+                    <span class="text-[11px] font-bold text-apple-gray uppercase tracking-wider">Mode</span>
+                    <label class="toggle-switch scale-[0.8]">
                         <input type="checkbox" id="modeToggle" checked>
                         <span class="toggle-slider"></span>
                     </label>
-                    <span class="font-semibold" id="modeText">Continuous</span>
-                    <span class="rounded-full bg-[#0071e3] px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">BETA</span>
+                    <span id="modeText" class="text-[12px] font-semibold min-w-[70px] text-center">Continuous</span>
                 </div>
-                <button class="rounded-full border border-white/40 bg-white/70 px-4 py-1.5 text-sm font-semibold text-[#0071e3] transition hover:bg-white" id="helpBtn">Session Tips</button>
             </div>
         </div>
     </nav>
 
-    <main class="relative z-10 pt-24 pb-16">
-        <div class="mx-auto max-w-6xl px-6">
+    <main class="relative z-10 pt-32 pb-24">
+        <div class="max-w-6xl mx-auto px-6">
+            
             <!-- Hero -->
-            <section class="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#edf2ff] via-white to-[#f8ecff] px-6 py-16 text-center shadow-[0_40px_80px_rgba(15,23,42,0.12)] fade-up">
-                <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.8),_transparent_55%)]"></div>
-                <div class="relative z-10 mx-auto max-w-3xl">
-                    <p class="text-sm uppercase tracking-[0.45em] text-[#86868b]">Content-first • Fluid audio</p>
-                    <h1 class="mt-4 text-[clamp(2.5rem,5vw,4.5rem)] font-semibold leading-tight tracking-tight text-[#1d1d1f]">Let your voice become the instrument</h1>
-                    <p class="mt-4 text-xl leading-relaxed text-[#424245]">Kazoo Proto maps your microphone to Tone.js engines with AudioWorklet-grade latency so slides, vibrato, and breathiness feel natural.</p>
-                    <div class="mt-8 flex flex-wrap justify-center gap-3 text-sm font-medium text-[#424245]">
-                        <span class="rounded-full bg-white/70 px-4 py-1.5">Latency target &lt; 50ms</span>
-                        <span class="rounded-full bg-white/70 px-4 py-1.5">AudioWorklet • YIN detection</span>
-                        <span class="rounded-full bg-white/70 px-4 py-1.5">Continuous + Legacy engines</span>
-                    </div>
-                    <div class="mt-10 grid gap-4 md:grid-cols-2">
-                        <div class="rounded-[24px] border border-white/60 bg-white/70 px-6 py-4 text-left shadow-sm backdrop-blur fade-up">
-                            <p class="text-sm font-semibold uppercase tracking-wide text-[#86868b]">Step 1</p>
-                            <p class="mt-1 text-2xl font-semibold tracking-tight text-[#1d1d1f]">Choose your timbre</p>
-                            <p class="mt-2 text-sm text-[#424245]">Pick from finely tuned sax, violin, piano, flute, guitar, or synth engines.</p>
-                        </div>
-                        <div class="rounded-[24px] border border-white/60 bg-white/70 px-6 py-4 text-left shadow-sm backdrop-blur fade-up" style="animation-delay:0.1s;">
-                            <p class="text-sm font-semibold uppercase tracking-wide text-[#86868b]">Step 2</p>
-                            <p class="mt-1 text-2xl font-semibold tracking-tight text-[#1d1d1f]">Start singing</p>
-                            <p class="mt-2 text-sm text-[#424245]">Allow the mic, tap start, and glide between notes with immediate feedback.</p>
-                        </div>
-                    </div>
+            <section class="text-center mb-20 relative">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[11px] font-bold tracking-wide uppercase mb-6">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    Web Audio API Native
                 </div>
+                
+                <h1 class="font-display text-5xl md:text-7xl font-bold tracking-tight text-apple-text mb-6 leading-[1.1]">
+                    Turn your voice into<br>
+                    <span class="text-transparent bg-clip-text bg-google-gradient">any instrument.</span>
+                </h1>
+                
+                <p class="text-xl text-apple-gray max-w-2xl mx-auto font-normal leading-relaxed">
+                    Advanced pitch tracking meets AudioWorklet. <br>
+                    Zero latency feeling. Pure creative flow.
+                </p>
             </section>
 
-            <!-- 控制区 -->
-            <section class="mt-12 grid gap-6 lg:grid-cols-12">
-                <!-- 乐器选择 -->
-                <div class="apple-bento fade-up scroll-section lg:col-span-7" id="instrumentSection">
-                    <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+                
+                <!-- 乐器选择 - 修复 Google 边框 -->
+                <div class="lg:col-span-7 flex flex-col" id="instrumentSection">
+                    <div class="flex items-center justify-between mb-5 pl-1">
+                        <h2 class="text-xl font-semibold tracking-tight">Select Instrument</h2>
+                        <div id="instrumentStatus" class="text-[11px] font-bold text-white bg-black/80 px-3 py-1 rounded-full shadow-sm">Saxophone</div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        <!-- Template for Instrument Buttons -->
+                        <!-- 重要：tabindex="0" 和 outline-none 修复蓝色框问题 -->
+                        
+                        <button class="instrument-btn active group relative w-full text-left focus:outline-none" data-instrument="saxophone">
+                            <div class="card-border-gradient"></div> <!-- 独立的背景层 -->
+                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
+                                <span class="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">🎷</span>
+                                <div>
+                                    <p class="font-semibold text-lg text-[#1D1D1F]">Saxophone</p>
+                                    <p class="text-[11px] text-apple-gray mt-1">Expressive Lead</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="violin">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
+                                <span class="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">🎻</span>
+                                <div>
+                                    <p class="font-semibold text-lg text-[#1D1D1F]">Violin</p>
+                                    <p class="text-[11px] text-apple-gray mt-1">Vibrato Ready</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="piano">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
+                                <span class="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">🎹</span>
+                                <div>
+                                    <p class="font-semibold text-lg text-[#1D1D1F]">Piano</p>
+                                    <p class="text-[11px] text-apple-gray mt-1">Percussive</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="flute">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
+                                <span class="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">🎼</span>
+                                <div>
+                                    <p class="font-semibold text-lg text-[#1D1D1F]">Flute</p>
+                                    <p class="text-[11px] text-apple-gray mt-1">Pure Sine</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="guitar">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
+                                <span class="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">🎸</span>
+                                <div>
+                                    <p class="font-semibold text-lg text-[#1D1D1F]">Guitar</p>
+                                    <p class="text-[11px] text-apple-gray mt-1">Plucked</p>
+                                </div>
+                            </div>
+                        </button>
+
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="synth">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
+                                <span class="text-4xl filter drop-shadow-md group-hover:scale-110 transition-transform duration-300">🎛️</span>
+                                <div>
+                                    <p class="font-semibold text-lg text-[#1D1D1F]">Synth</p>
+                                    <p class="text-[11px] text-apple-gray mt-1">Sawtooth</p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 控制中心 - 修复 Cannot read classList 错误 -->
+                <div class="lg:col-span-5 flex flex-col h-full" id="recordingSection">
+                    <div class="flex items-center justify-between mb-5 pl-1">
+                        <h2 class="text-xl font-semibold tracking-tight">Live Control</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span id="recordingStatus" class="text-[11px] font-bold text-apple-gray uppercase">Standby</span>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-[32px] p-8 flex-1 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-[80px]"></div>
+
                         <div>
-                            <p class="text-sm uppercase tracking-wide text-[#86868b]">Step 1</p>
-                            <h2 class="text-3xl font-semibold leading-tight tracking-tight text-[#1d1d1f]">Choose your instrument</h2>
+                            <h3 class="text-3xl font-display font-bold text-apple-text mb-3">Start Session</h3>
+                            <p id="recordingHelper" class="text-sm text-apple-gray leading-relaxed max-w-[90%]">
+                                Ensure your microphone is connected. Use headphones to avoid feedback.
+                            </p>
                         </div>
-                        <div class="status-chip status-ready" id="instrumentStatus">Saxophone</div>
-                    </div>
-                    <p class="mt-3 text-base text-[#424245]">Presets keep dynamics intact. Switch freely when the engine is idle.</p>
-                    <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <button class="instrument-btn active flex flex-col items-start gap-3 rounded-2xl border border-white/60 bg-white/80 px-5 py-6 text-left shadow-[0_20px_60px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2" data-instrument="saxophone" aria-label="Select saxophone instrument">
-                            <span class="text-4xl">🎷</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Saxophone</p>
-                                <p class="text-sm text-[#424245]">Velvety breaths for solo leads.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-white/60 bg-white/70 px-5 py-6 text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2" data-instrument="violin" aria-label="Select violin instrument">
-                            <span class="text-4xl">🎻</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Violin</p>
-                                <p class="text-sm text-[#424245]">Expressive and cinematic.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-white/60 bg-white/70 px-5 py-6 text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2" data-instrument="piano" aria-label="Select piano instrument">
-                            <span class="text-4xl">🎹</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Piano</p>
-                                <p class="text-sm text-[#424245]">Percussive and glassy.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-white/60 bg-white/70 px-5 py-6 text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2" data-instrument="flute" aria-label="Select flute instrument">
-                            <span class="text-4xl">🎼</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Flute</p>
-                                <p class="text-sm text-[#424245]">Breathy crystalline highs.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-white/60 bg-white/70 px-5 py-6 text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2" data-instrument="guitar" aria-label="Select guitar instrument">
-                            <span class="text-4xl">🎸</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Guitar</p>
-                                <p class="text-sm text-[#424245]">Plucked harmonic richness.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-white/60 bg-white/70 px-5 py-6 text-left transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_rgba(15,23,42,0.12)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2" data-instrument="synth" aria-label="Select synth instrument">
-                            <span class="text-4xl">🎛️</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Synth</p>
-                                <p class="text-sm text-[#424245]">Modern pads + leads.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-dashed border-white/60 bg-white/50 px-5 py-6 text-left opacity-40" disabled>
-                            <span class="text-4xl">🎺</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Trumpet</p>
-                                <p class="text-sm text-[#424245]">Under design.</p>
-                            </div>
-                        </button>
-                        <button class="instrument-btn flex flex-col items-start gap-3 rounded-2xl border border-dashed border-white/60 bg-white/50 px-5 py-6 text-left opacity-40" disabled>
-                            <span class="text-4xl">🥁</span>
-                            <div>
-                                <p class="instrument-name text-xl font-semibold tracking-tight">Drums</p>
-                                <p class="text-sm text-[#424245]">Coming soon.</p>
-                            </div>
-                        </button>
-                    </div>
-                </div>
 
-                <!-- 主控制按钮 -->
-                <div class="apple-bento fade-up scroll-section lg:col-span-5" id="recordingSection">
-                    <p class="text-sm uppercase tracking-wide text-[#86868b]">Step 2</p>
-                    <h2 class="mt-1 text-3xl font-semibold leading-tight tracking-tight text-[#1d1d1f]">Control center</h2>
-                    <p class="mt-3 text-base text-[#424245]">Tap start, allow microphone access, and perform. Kazoo Proto manages routing, smoothing, and latency monitoring.</p>
-
-                    <div class="mt-6 flex flex-col items-center gap-3 text-center">
-                        <button class="start-cta animate-pulse-slow" id="startBtn" aria-label="Start playing audio">
-                            <span>Start Playing</span>
-                        </button>
-                        <button class="stop-cta hidden" id="stopBtn" aria-label="Stop playing audio">
-                            <span>Stop</span>
-                        </button>
-                        <p class="helper-text" id="recordingHelper">No setup required • Works in your browser</p>
-                    </div>
-
-                    <div class="mt-6 flex items-center justify-between rounded-2xl border border-white/70 bg-white/70 px-5 py-3">
-                        <div>
-                            <p class="text-xs uppercase tracking-wide text-[#86868b]">Session state</p>
-                            <p class="text-base font-semibold">Ready</p>
-                        </div>
-                        <div class="status-chip status-ready" id="recordingStatus">Ready</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 状态显示 -->
-            <div class="hidden mt-10 grid gap-4 md:grid-cols-3 fade-up scroll-section" id="statusBar">
-                <div class="status-card">
-                    <p class="text-xs uppercase tracking-wide text-[#86868b]">Status</p>
-                    <p class="text-2xl font-semibold tracking-tight" id="systemStatus">Ready</p>
-                </div>
-                <div class="status-card">
-                    <p class="text-xs uppercase tracking-wide text-[#86868b]">Latency</p>
-                    <p class="text-2xl font-semibold tracking-tight" id="latency">--</p>
-                </div>
-                <div class="status-card">
-                    <p class="text-xs uppercase tracking-wide text-[#86868b]">Confidence</p>
-                    <p class="text-2xl font-semibold tracking-tight" id="confidence">--</p>
-                </div>
-            </div>
-
-            <!-- 可视化 -->
-            <div class="visualizer fade-up hidden mt-10 scroll-section" id="visualizer">
-                <div class="rounded-[28px] bg-[#1d1d1f] px-6 py-8 text-white shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-                    <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
-                        <div class="flex-1">
-                            <p class="text-xs uppercase tracking-[0.3em] text-white/60">Current note</p>
-                            <p class="mt-2 text-6xl font-semibold tracking-tight text-white" id="currentNote">--</p>
-                            <p class="mt-1 text-sm text-white/60" id="currentFreq">--</p>
-                        </div>
-                        <div class="flex-[2] rounded-2xl border border-white/10 bg-white/5 p-4">
-                            <canvas id="pitchCanvas" width="600" height="80" class="h-24 w-full rounded-xl bg-black/20"></canvas>
+                        <div class="mt-8 relative">
+                            <!-- 修复核心：
+                                 stopBtn 必须在 HTML 中显式拥有 "hidden" 类。
+                                 如果 JS 使用 toggle('hidden') 或 remove('hidden')，
+                                 初始状态必须正确，否则会 crash 或显示双按钮。
+                            -->
+                            <button id="startBtn" class="w-full h-14 bg-black hover:bg-gray-900 text-white text-[15px] font-semibold rounded-full transition-all duration-300 transform active:scale-[0.98] shadow-lg flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                Start Engine
+                            </button>
+                            
+                            <button id="stopBtn" class="hidden w-full h-14 bg-red-500 hover:bg-red-600 text-white text-[15px] font-semibold rounded-full transition-all duration-300 transform active:scale-[0.98] shadow-lg flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+                                Stop Session
+                            </button>
                         </div>
                     </div>
-                    <div class="mt-4 text-xs uppercase tracking-[0.3em] text-white/50">
-                        Reference lines mark C3 / C4 / C5 intervals.
+
+                    <div class="grid grid-cols-3 gap-3 mt-4">
+                        <div class="glass rounded-2xl p-3 text-center">
+                            <div class="text-[9px] text-apple-gray uppercase font-bold tracking-wider mb-1">System</div>
+                            <div id="systemStatus" class="text-xs font-semibold truncate">Ready</div>
+                        </div>
+                        <div class="glass rounded-2xl p-3 text-center">
+                            <div class="text-[9px] text-apple-gray uppercase font-bold tracking-wider mb-1">Latency</div>
+                            <div id="latency" class="text-xs font-semibold">--</div>
+                        </div>
+                        <div class="glass rounded-2xl p-3 text-center">
+                            <div class="text-[9px] text-apple-gray uppercase font-bold tracking-wider mb-1">Conf.</div>
+                            <div id="confidence" class="text-xs font-semibold">--</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- 帮助部分 -->
-            <section class="apple-bento mt-12 fade-up scroll-section" id="tipsSection">
-                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p class="text-sm uppercase tracking-wide text-[#86868b]">Need tips?</p>
-                        <h3 class="text-2xl font-semibold tracking-tight text-[#1d1d1f]">Run low-latency sessions with confidence</h3>
-                    </div>
-                    <button class="rounded-full border border-white/60 px-4 py-2 text-sm font-semibold text-[#0071e3] transition hover:border-[#0071e3]" id="helpToggle" aria-label="Toggle help tips" aria-expanded="false">Show / Hide</button>
-                </div>
-                <div class="help-content mt-6 text-sm leading-relaxed text-[#424245]" id="helpContent">
-                    <div class="grid gap-6 lg:grid-cols-3">
-                        <article class="tip-card">
-                            <p class="text-xs uppercase tracking-[0.3em] text-[#86868b]">Setup</p>
-                            <h4 class="text-lg font-semibold tracking-tight text-[#1d1d1f]">Capture clean input</h4>
-                            <ul class="mt-3 space-y-2">
-                                <li>Use closed-back headphones to avoid feedback loops.</li>
-                                <li>Keep the microphone 10–20cm away for stable gain.</li>
-                                <li>Enable Worklet mode (HTTPS or localhost) before going live.</li>
-                            </ul>
-                        </article>
-                        <article class="tip-card">
-                            <p class="text-xs uppercase tracking-[0.3em] text-[#86868b]">Performance</p>
-                            <h4 class="text-lg font-semibold tracking-tight text-[#1d1d1f]">Play to the engine</h4>
-                            <ul class="mt-3 space-y-2">
-                                <li>Continuous mode favors slides and vibrato nuances.</li>
-                                <li>Legacy mode locks to tempered notes for precision.</li>
-                                <li>Switch modes only while stopped to avoid glitches.</li>
-                            </ul>
-                        </article>
-                        <article class="tip-card">
-                            <p class="text-xs uppercase tracking-[0.3em] text-[#86868b]">Troubleshoot</p>
-                            <h4 class="text-lg font-semibold tracking-tight text-[#1d1d1f]">Stay in the flow</h4>
-                            <ul class="mt-3 space-y-2">
-                                <li>If you hear lag, close extra browser tabs and re-init audio.</li>
-                                <li>Artifacts usually clear after changing presets or lowering noise.</li>
-                                <li>Need deeper help? Read <a href="docs/guides/troubleshooting.md" class="inline-link">Troubleshooting Guide</a>.</li>
-                            </ul>
-                            <div class="warning-box hidden mt-4" id="warningBox">
-                                <strong class="text-[#1d1d1f]">⚠️ Issues Detected:</strong>
-                                <div class="mt-2" id="warningText"></div>
+            <!-- Status Bar (for compatibility with main.js) -->
+            <div id="statusBar" class="hidden"></div>
+
+            <!-- Visualizer -->
+            <div id="visualizer" class="hidden mb-16 fade-up">
+                <div class="bg-[#161617] rounded-[32px] p-8 md:p-10 shadow-2xl relative overflow-hidden border border-white/10">
+                    <div class="absolute top-[-50%] left-[-10%] w-[80%] h-[200%] bg-gradient-to-r from-blue-500/20 via-purple-500/10 to-transparent rotate-12 blur-3xl pointer-events-none gpu-accelerated"></div>
+
+                    <div class="relative z-10 flex flex-col md:flex-row gap-8 items-center">
+                        <div class="text-center md:text-left min-w-[140px]">
+                            <span class="inline-block text-[10px] font-bold text-white/50 tracking-[0.2em] mb-1">DETECTED PITCH</span>
+                            <div class="flex flex-col">
+                                <h2 id="currentNote" class="text-7xl font-display font-bold tracking-tighter text-white drop-shadow-lg">--</h2>
+                                <span id="currentFreq" class="text-lg text-white/60 font-mono mt-1">0 Hz</span>
                             </div>
-                        </article>
+                        </div>
+                        
+                        <div class="flex-1 w-full h-32 bg-black/40 rounded-2xl border border-white/10 p-1 backdrop-blur-md shadow-inner">
+                            <canvas id="pitchCanvas" class="w-full h-full rounded-xl"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips & Troubleshooting - 修复 warningBox 存在性 -->
+            <section id="tipsSection" class="mb-20">
+                <div class="flex items-center justify-between mb-6 px-2">
+                    <h2 class="text-2xl font-semibold tracking-tight">Session Tips</h2>
+                    <button id="helpToggle" class="text-sm font-medium text-blue-600 hover:text-blue-700">Show Details</button>
+                </div>
+
+                <div id="helpContent" class="grid md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-[24px]">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm mb-3 font-bold">1</div>
+                        <h3 class="font-semibold text-[#1D1D1F] mb-2">Audio Environment</h3>
+                        <p class="text-xs text-apple-gray leading-relaxed">Use headphones. The microphone will pick up the speakers if you don't.</p>
+                    </div>
+                    <div class="glass p-6 rounded-[24px]">
+                        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm mb-3 font-bold">2</div>
+                        <h3 class="font-semibold text-[#1D1D1F] mb-2">Mode Selection</h3>
+                        <p class="text-xs text-apple-gray leading-relaxed">"Continuous" allows for sliding notes. Toggle off for discrete pitch steps.</p>
+                    </div>
+                    <div class="glass p-6 rounded-[24px]">
+                        <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm mb-3 font-bold">3</div>
+                        <h3 class="font-semibold text-[#1D1D1F] mb-2">Troubleshoot</h3>
+                        <p class="text-xs text-apple-gray leading-relaxed">If sound stops, click Stop then Start again. Chrome handles AudioWorklets best.</p>
+                        
+                        <!-- 必须存在 warningBox 和 warningText 供 JS 写入，否则报错 -->
+                        <div id="warningBox" class="hidden mt-3 p-2 bg-red-50 rounded border border-red-100">
+                            <div id="warningText" class="text-[10px] text-red-600 font-medium"></div>
+                        </div>
                     </div>
                 </div>
             </section>
+
+            <!-- Early Bird Form -->
+            <section class="mb-20">
+                <div class="relative bg-white rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-gray-100">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-google-gradient"></div>
+                    
+                    <div class="px-6 py-12 text-center relative z-10">
+                        <span class="inline-block py-1 px-3 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-widest mb-4">Coming Soon</span>
+                        <h2 class="text-3xl font-display font-bold text-[#1D1D1F] mb-4">Get Kazoo Pro for Desktop.</h2>
+                        <p class="text-apple-gray max-w-lg mx-auto mb-8 text-base">
+                            High-fidelity offline rendering and MIDI export. 
+                            Join the early bird list for <span class="text-green-600 font-semibold">50% off</span>.
+                        </p>
+
+                        <form id="waitlistForm" class="max-w-md mx-auto relative" onsubmit="event.preventDefault(); handleFormSubmit();">
+                            <div class="input-group relative flex items-center transition-all duration-300 rounded-full bg-gray-50 border border-gray-200 p-1">
+                                <div class="pl-4 text-gray-400 input-icon transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                </div>
+                                <input type="email" placeholder="Enter your email address" required
+                                    class="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[#1D1D1F] placeholder-gray-400 text-sm font-medium">
+                                <button type="submit" id="submitBtn"
+                                    class="bg-[#1D1D1F] hover:bg-black text-white rounded-full px-6 py-3 text-sm font-bold transition-all duration-300 flex items-center gap-2">
+                                    <span>Notify Me</span>
+                                </button>
+                            </div>
+                            <p id="formFeedback" class="text-green-600 text-xs font-bold mt-3 opacity-0 transition-opacity duration-300 transform translate-y-2">
+                                You're on the list! 🚀
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="text-center pb-8 border-t border-gray-200 pt-8">
+                <p class="text-xs text-apple-gray">&copy; 2025 Kazoo Proto. Runs locally in your browser.</p>
+            </footer>
+
         </div>
     </main>
 
-    <!-- 库文件 -->
+    <!-- 脚本加载 -->
     <script src="js/lib/tone.js"></script>
     <script src="js/lib/pitchfinder-browser.js"></script>
-
-    <!-- Phase 1: 音频配置和抽象层 (必须在其他模块之前加载) -->
     <script src="js/audio-config.js"></script>
     <script src="js/audio-io.js"></script>
-    <!-- audio-input.js (Legacy) 已弃用，AudioIO 提供完整功能 -->
-
-    <!-- 应用模块 -->
     <script src="js/pitch-detector.js"></script>
     <script src="js/synthesizer.js"></script>
-    <script src="js/continuous-synth.js"></script> <!-- Phase 2: New engine -->
+    <script src="js/continuous-synth.js"></script>
     <script src="js/performance.js"></script>
-
-    <!-- Phase 3 Stage2: 移除全局桥接脚本，所有模块由 main.js 直接 import -->
-    <!-- Phase 2.10: 主应用 (ES Module) -->
     <script type="module" src="js/main.js"></script>
-    <!-- 注意：不再加载 calibration.js -->
+
+    <!-- 修复与交互脚本 -->
+    <script>
+        // 安全补丁：防止 "Cannot read classList of null"
+        // 在 DOM 加载但 JS 执行前，确保核心 ID 存在
+        document.addEventListener('DOMContentLoaded', () => {
+            const requiredIds = ['stopBtn', 'startBtn', 'warningBox', 'warningText'];
+            requiredIds.forEach(id => {
+                if (!document.getElementById(id)) {
+                    console.warn(`Safety Patch: Created missing element #${id} to prevent crash.`);
+                    const div = document.createElement('div');
+                    div.id = id;
+                    div.style.display = 'none'; // 隐藏它，只为了让 JS 不报错
+                    document.body.appendChild(div);
+                }
+            });
+            
+            // 修复 Instrument 按钮点击逻辑
+            // NOTE: 主要的乐器选择逻辑在 main.js 中处理 (lines 174-199)
+            // 这里只处理视觉激活状态 (Google 彩色边框)
+            const btns = document.querySelectorAll('.instrument-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有按钮的 active 类
+                    btns.forEach(b => b.classList.remove('active'));
+                    // 添加当前按钮的 active 类
+                    this.classList.add('active');
+                });
+            });
+            
+            // 修复 Tips Toggle
+            const helpToggle = document.getElementById('helpToggle');
+            const helpContent = document.getElementById('helpContent');
+            if(helpToggle && helpContent) {
+                helpToggle.addEventListener('click', () => {
+                    helpContent.classList.toggle('hidden');
+                    helpToggle.textContent = helpContent.classList.contains('hidden') ? "Show Details" : "Hide Details";
+                });
+            }
+        });
+
+        function handleFormSubmit() {
+            const btn = document.getElementById('submitBtn');
+            const feedback = document.getElementById('formFeedback');
+            const input = document.querySelector('input[type="email"]');
+            
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span>...</span>';
+            
+            setTimeout(() => {
+                btn.innerHTML = '<span>✓</span>';
+                btn.classList.remove('bg-[#1D1D1F]');
+                btn.classList.add('bg-green-500');
+                feedback.style.opacity = '1';
+                feedback.style.transform = 'translateY(0)';
+                input.value = '';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.add('bg-[#1D1D1F]');
+                    btn.classList.remove('bg-green-500');
+                    feedback.style.opacity = '0';
+                }, 3000);
+            }, 800);
+        }
+    </script>
 </body>
 </html>

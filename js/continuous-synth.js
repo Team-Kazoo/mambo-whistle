@@ -221,6 +221,16 @@ class ContinuousSynthEngine {
         //  确保在用户手势后启动 AudioContext
         await Tone.start();
 
+        // 🔥 [CRITICAL FIX] 移除 Tone.js 的调度延迟
+        // 默认 lookAhead 是 0.1 (100ms)，这对于实时乐器是致命的
+        // 参考: https://tonejs.github.io/docs/14.7.77/Context#lookAhead
+        Tone.context.lookAhead = 0;
+        console.log('[ContinuousSynth] ⚡ Tone.js lookAhead set to 0ms (real-time mode)');
+
+        // 注意: latencyHint 是只读属性，在 AudioContext 创建时由 AudioIO 设置为 'interactive'
+        // 不需要在这里重复设置
+        console.log('[ContinuousSynth] ℹ️ latencyHint is read-only (already set by AudioIO)');
+
         //  启动噪声源 (之前在构造函数中启动会触发警告)
         if (this.noiseSource && this.noiseSource.state !== 'started') {
             this.noiseSource.start();
@@ -389,8 +399,10 @@ class ContinuousSynthEngine {
         if (deviation > this.frequencyUpdateThreshold) {
             const startTime = performance.now();
 
-            // 设置调整后的频率（Tone.js 通过 portamento 平滑过渡）
-            this.currentSynth.frequency.value = adjustedFrequency;
+            // 🔥 [LATENCY FIX] 使用极短的 rampTo 代替直接赋值
+            // 0.01s (10ms) 的平滑既能避免爆音，又能保持低延迟
+            // 之前的直接赋值 (frequency.value =) 可能导致点击声
+            this.currentSynth.frequency.rampTo(adjustedFrequency, 0.01);
 
             // 性能监控
             const latency = performance.now() - startTime;
@@ -450,8 +462,8 @@ class ContinuousSynthEngine {
         const mappedBrightness = Math.pow(brightness, 0.5);  // 指数 0.5 (平方根) 让响应更快
         const filterFreq = 3500 + mappedBrightness * 4500;
 
-        // 平滑过渡 (20ms)
-        this.filter.frequency.rampTo(filterFreq, 0.02);
+        // 🔥 [LATENCY FIX] 缩短平滑时间 (20ms → 10ms)
+        this.filter.frequency.rampTo(filterFreq, 0.01);
 
         // Debug 日志（仅在亮度明显变化时）
         if (brightness < 0.3 || brightness > 0.7) {
@@ -476,13 +488,14 @@ class ContinuousSynthEngine {
         // 限制噪声最大强度 (避免过度嘈杂)
         const noiseAmount = Math.min(breathiness * noiseGainMax, noiseGainMax);
 
-        // 平滑调整噪声增益 (50ms)
-        this.noiseGain.gain.rampTo(noiseAmount, 0.05);
+        // 🔥 [LATENCY FIX] 缩短平滑时间 (50ms → 20ms)
+        // 噪声变化不需要太长的过渡时间
+        this.noiseGain.gain.rampTo(noiseAmount, 0.02);
 
         // 让噪声滤波器跟随音高 (让气声更自然)
         if (frequency && frequency > 0) {
             const noiseFilterFreq = frequency * 2; // 噪声中心频率为音高的 2 倍
-            this.noiseFilter.frequency.rampTo(noiseFilterFreq, 0.05);
+            this.noiseFilter.frequency.rampTo(noiseFilterFreq, 0.02);
         }
 
         // Debug 日志（仅在气声明显时）
@@ -548,7 +561,8 @@ class ContinuousSynthEngine {
         // 从音分偏差计算颤音深度
         if (cents && Math.abs(cents) > 10) {
             const vibratoDepth = Math.min(Math.abs(cents) / 50, 1) * 0.3;
-            this.vibrato.depth.rampTo(vibratoDepth, 0.05);
+            // 🔥 [LATENCY FIX] 缩短平滑时间 (50ms → 10ms)
+            this.vibrato.depth.rampTo(vibratoDepth, 0.01);
         }
 
         //  使用新的 brightness 控制（如果可用）
@@ -558,7 +572,8 @@ class ContinuousSynthEngine {
             // 回退: 从音量计算滤波器亮度
             const estimatedBrightness = Math.min(volume * 2, 1);
             const filterFreq = 500 + estimatedBrightness * 3500;
-            this.filter.frequency.rampTo(filterFreq, 0.05);
+            // 🔥 [LATENCY FIX] 缩短平滑时间 (50ms → 10ms)
+            this.filter.frequency.rampTo(filterFreq, 0.01);
         }
 
         //  使用新的 breathiness 控制（如果可用）

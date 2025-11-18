@@ -174,22 +174,13 @@ class KazooApp {
         // 乐器选择
         this.ui.instrumentBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
-                // 移除所有按钮的选中状态 (Tailwind classes)
-                this.ui.instrumentBtns.forEach(b => {
-                    b.classList.remove('active', 'bg-blue-50', 'border-blue-500', 'ring-2', 'ring-blue-500', 'shadow-lg');
-                    b.classList.add('bg-white', 'border-gray-200');
-                });
-
-                // 添加当前按钮的选中状态
-                e.currentTarget.classList.add('active');
-                e.currentTarget.classList.remove('bg-white', 'border-gray-200');
-                e.currentTarget.classList.add('bg-blue-50', 'border-blue-500', 'ring-2', 'ring-blue-500', 'shadow-lg');
-
                 const instrument = e.currentTarget.dataset.instrument;
 
-                // 更新状态徽章
-                const instrumentName = e.currentTarget.querySelector('.instrument-name').textContent;
-                this.ui.instrumentStatus.textContent = instrumentName;
+                // 更新状态徽章 - 从 button 中提取乐器名称
+                const instrumentNameEl = e.currentTarget.querySelector('.font-semibold');
+                if (instrumentNameEl && this.ui.instrumentStatus) {
+                    this.ui.instrumentStatus.textContent = instrumentNameEl.textContent;
+                }
 
                 // 如果合成器已初始化，切换乐器（使用当前引擎）
                 if (this.currentEngine && this.currentEngine.currentSynth) {
