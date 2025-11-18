@@ -6,16 +6,25 @@
  * - 支持 AudioWorklet 模式指标
  * - 记录处理器类型 (worklet/script-processor)
  * - Worklet 性能统计集成
+ * - Phase 1.1: 端到端延迟测量和百分位数统计
  */
 
-class PerformanceMonitor {
+export default class PerformanceMonitor {
     constructor() {
         // 性能指标
         this.metrics = {
             latency: {
                 audio: 0,      // 音频系统延迟
                 processing: 0,  // 处理延迟
-                total: 0        // 总延迟
+                total: 0,       // 总延迟
+                // Phase 1.1: 端到端延迟分解
+                endToEnd: {
+                    capture: 0,
+                    detection: 0,
+                    synthesis: 0,
+                    output: 0,
+                    total: 0
+                }
             },
             fps: 0,             // 检测帧率
             frameCount: 0,
@@ -35,6 +44,10 @@ class PerformanceMonitor {
         this.processingStartTime = 0;
         this.processingTimes = [];
         this.processingHistorySize = 50;
+
+        // Phase 1.1: 延迟样本追踪
+        this.latencySamples = [];
+        this.maxLatencySamples = 240; // 追踪最近240个样本 (~5秒 @ 48Hz检测率)
 
         // 更新回调
         this.onMetricsUpdate = null;
@@ -271,10 +284,157 @@ class PerformanceMonitor {
             }
         };
     }
+
+    // ========================================================================
+    // Phase 1.1: 端到端延迟测量增强
+    // ========================================================================
+
+    /**
+     * 记录端到端延迟样本
+     *
+     * ⚠️ CRITICAL: All parameters should be **durations** (in ms), not absolute timestamps
+     *
+     * @param {number} captureDuration - Capture stage duration (麦克风捕获 → 缓冲就绪)
+     * @param {number} detectionDuration - Detection stage duration (YIN 算法执行时间)
+     * @param {number} synthesisDuration - Synthesis stage duration (Tone.js 合成时间)
+     * @param {number} outputDuration - Output stage duration (音频输出延迟)
+     * @returns {Object} 延迟样本对象
+     */
+    recordLatencySample(captureDuration, detectionDuration, synthesisDuration, outputDuration) {
+        const sample = {
+            capture: captureDuration,
+            detection: detectionDuration,
+            synthesis: synthesisDuration,
+            output: outputDuration,
+            total: captureDuration + detectionDuration + synthesisDuration + outputDuration,
+            timestamp: performance.now()
+        };
+
+        this.latencySamples.push(sample);
+        if (this.latencySamples.length > this.maxLatencySamples) {
+            this.latencySamples.shift();
+        }
+
+        // 更新当前指标
+        this.metrics.latency.endToEnd = {
+            capture: sample.capture,
+            detection: sample.detection,
+            synthesis: sample.synthesis,
+            output: sample.output,
+            total: sample.total
+        };
+
+        return sample;
+    }
+
+    /**
+     * 获取延迟统计信息（包含百分位数）
+     * @returns {Object} 延迟统计对象 {count, min, max, avg, p50, p95, p99, mode, breakdown}
+     */
+    getLatencyStats() {
+        if (this.latencySamples.length === 0) {
+            return {
+                count: 0,
+                min: 0,
+                max: 0,
+                avg: 0,
+                p50: 0,
+                p95: 0,
+                p99: 0,
+                mode: this.metrics.mode,
+                breakdown: null
+            };
+        }
+
+        const totals = this.latencySamples.map(s => s.total).sort((a, b) => a - b);
+        const count = totals.length;
+
+        return {
+            count,
+            min: totals[0],
+            max: totals[count - 1],
+            avg: this._calculateAverage(totals),
+            p50: this._calculatePercentile(totals, 0.50),
+            p95: this._calculatePercentile(totals, 0.95),
+            p99: this._calculatePercentile(totals, 0.99),
+            mode: this.metrics.mode,
+            breakdown: this._getLatencyBreakdown()
+        };
+    }
+
+    /**
+     * 获取延迟各组件的平均值
+     * @private
+     * @returns {Object|null} 延迟分解对象
+     */
+    _getLatencyBreakdown() {
+        if (this.latencySamples.length === 0) return null;
+
+        return {
+            capture: this._calculateAverage(this.latencySamples.map(s => s.capture)),
+            detection: this._calculateAverage(this.latencySamples.map(s => s.detection)),
+            synthesis: this._calculateAverage(this.latencySamples.map(s => s.synthesis)),
+            output: this._calculateAverage(this.latencySamples.map(s => s.output))
+        };
+    }
+
+    /**
+     * 计算百分位数
+     * @private
+     * @param {number[]} sortedArray - 已排序的数组
+     * @param {number} percentile - 百分位数 (0.0-1.0)
+     * @returns {number} 百分位数值
+     */
+    _calculatePercentile(sortedArray, percentile) {
+        if (sortedArray.length === 0) return 0;
+        const index = Math.ceil(sortedArray.length * percentile) - 1;
+        return sortedArray[Math.max(0, index)];
+    }
+
+    /**
+     * 计算数组平均值
+     * @private
+     * @param {number[]} array - 数值数组
+     * @returns {number} 平均值
+     */
+    _calculateAverage(array) {
+        if (array.length === 0) return 0;
+        return array.reduce((sum, val) => sum + val, 0) / array.length;
+    }
+
+    /**
+     * 获取模式警告
+     * @returns {Object} 警告对象 {warning: boolean, message?: string, recommendation?: string}
+     */
+    getModeWarning() {
+        if (this.metrics.mode === 'script-processor') {
+            return {
+                warning: true,
+                message: 'ScriptProcessor fallback detected (+46ms base latency)',
+                recommendation: 'Ensure HTTPS or localhost for AudioWorklet support'
+            };
+        }
+        return { warning: false };
+    }
+
+    /**
+     * 获取完整延迟报告
+     * @returns {Object} 延迟报告对象
+     */
+    getLatencyReport() {
+        return {
+            mode: this.metrics.mode,
+            baseLatency: this.metrics.mode === 'worklet' ?
+                '~3ms (128 samples)' : '~46ms (2048 samples)',
+            contextLatency: this.metrics.latency.audio,
+            stats: this.getLatencyStats(),
+            warning: this.getModeWarning()
+        };
+    }
 }
 
-// Step 2 Layer 2: 移除全局实例创建
-// 实例现在由 AppContainer 统一管理
-// 旧代码: const performanceMonitor = new PerformanceMonitor();
-//
-// 为向后兼容，在 main.js 中通过 window.performanceMonitor 暴露容器实例
+if (typeof window !== 'undefined') {
+    window.PerformanceMonitor = PerformanceMonitor;
+}
+
+export { PerformanceMonitor };

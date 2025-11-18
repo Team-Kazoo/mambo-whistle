@@ -455,7 +455,11 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
             if (this.accumulationFull) {
                 // 检查音量阈值
                 if (volume >= this.config.minVolumeThreshold) {
+                    //  Phase 1.1: Measure detection duration
+                    const detectionStart = currentTime * 1000; // Convert to ms
                     const frequency = this.detector(this.accumulationBuffer);
+                    const detectionEnd = currentTime * 1000;
+                    const detectionDuration = detectionEnd - detectionStart;
 
                     //  调试: 记录 YIN 检测结果
                     if (!frequency) {
@@ -544,8 +548,9 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
                                 // 起音状态
                                 articulation: articulation,
 
-                                // 延迟测量 (毫秒时间戳)
-                                captureTime: currentTime * 1000,
+                                //  Phase 1.1: Latency measurement
+                                captureTime: currentTime * 1000,  // Capture timestamp (ms)
+                                detectionDuration: detectionDuration,  // YIN algorithm duration (ms)
 
                                 // 调试信息 (可选)
                                 _debug: {
