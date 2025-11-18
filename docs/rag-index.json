@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2025-11-18T08:44:46Z",
+  "sourceVersion": "0.3.0 (Performance First)",
+  "chunks": [
+    {
+      "id": "project-overview",
+      "source": "CLAUDE.md",
+      "topic": "overview",
+      "filePath": "CLAUDE.md#project-overview",
+      "summary": "Kazoo Proto Web is a browser-based real-time voice to instrument system that routes microphone audio through an AudioWorklet, performs YIN pitch detection, extracts expressive features, and drives Tone.js synthesizers. Primary goal is cutting end-to-end latency below 50ms (currently ~180ms).",
+      "keywords": ["voice-to-instrument", "AudioWorklet", "YIN", "Tone.js", "latency"],
+      "keyFiles": ["js/main.js", "js/audio-io.js", "js/pitch-detector.js", "js/continuous-synth.js"]
+    },
+    {
+      "id": "architecture-di",
+      "source": "PROJECT_STATUS.md",
+      "topic": "architecture",
+      "filePath": "PROJECT_STATUS.md#architecture",
+      "summary": "Application code is wired through a custom AppContainer dependency injection system that exposes services on window.container. Services cover configuration, preset management, detection, synthesis, audio IO, performance monitoring, expressive features, and the KazooApp controller.",
+      "keywords": ["AppContainer", "dependency injection", "services"],
+      "keyFiles": ["js/core/app-container.js", "js/main.js"]
+    },
+    {
+      "id": "performance-targets",
+      "source": "CLAUDE.md",
+      "topic": "performance",
+      "filePath": "CLAUDE.md#performance-targets",
+      "summary": "Latency must be <50ms overall, console.log count <50, test coverage >=40% (current ~10%), and global variables limited to window.app + window.container. Performance measurements rely on window.app.getLatencyStats() and specific instrumentation hooks.",
+      "keywords": ["latency", "testing", "performance targets"],
+      "keyFiles": ["js/performance.js", "js/main.js"]
+    },
+    {
+      "id": "testing-requirements",
+      "source": "CLAUDE.md",
+      "topic": "testing",
+      "filePath": "CLAUDE.md#testing-philosophy",
+      "summary": "All tests must run through Vitest CLI, live under tests/unit or tests/integration, and represent real, fail-able cases. Priority modules needing coverage: audio IO, pitch detector, synthesizers, and configuration loaders.",
+      "keywords": ["Vitest", "tests", "coverage"],
+      "keyFiles": ["tests/unit/app-container.test.js", "tests/unit/audio-io.test.js", "tests/unit/pitch-detector.test.js", "vitest.config.js"]
+    },
+    {
+      "id": "audio-pipeline",
+      "source": "CLAUDE.md",
+      "topic": "audio",
+      "filePath": "CLAUDE.md#audio-pipeline",
+      "summary": "Signal path: microphone → AudioWorklet (128 sample frames target) → YIN pitch detector → expressive feature pipeline (volume, timbre, spectral metrics) → Tone.js synthesizers → output. AudioIO must stay in Worklet mode to avoid ScriptProcessor latency fallback.",
+      "keywords": ["audio pipeline", "microphone", "AudioWorklet", "YIN"],
+      "keyFiles": ["js/audio-io.js", "js/pitch-worklet.js", "js/expressive-features.js", "js/continuous-synth.js"]
+    },
+    {
+      "id": "ui-progress",
+      "source": "docs/CURRENT_STATE_ANALYSIS.md",
+      "topic": "ui",
+      "filePath": "docs/CURRENT_STATE_ANALYSIS.md#frontend-ui-state",
+      "summary": "UI modernization Phases 1-2 completed (hero, nav, instrument cards, accessibility). Phases 3-4 still missing: enhanced controls/status bar, visualization polish, better pitch history display, and removal of unused CSS.",
+      "keywords": ["UI modernization", "phases", "status bar", "visualization"],
+      "keyFiles": ["index.html", "css/styles.css", "js/managers/ui-manager.js"]
+    },
+    {
+      "id": "audio-robustness",
+      "source": "docs/CURRENT_STATE_ANALYSIS.md",
+      "topic": "audio",
+      "filePath": "docs/CURRENT_STATE_ANALYSIS.md#audio-processing-state",
+      "summary": "Key risks include large YIN buffers causing pitch lag, slow expressive feature updates, onset detector thresholds missing fast attacks, and clicks when switching instruments. Proposed mitigations: pitch smoothing, tuning FFT intervals, reducing thresholds, and adding synth crossfades.",
+      "keywords": ["pitch smoothing", "FFT", "onset detection", "instrument switching"],
+      "keyFiles": ["js/pitch-detector.js", "js/features/smoothing-filters.js", "js/features/onset-detector.js", "js/continuous-synth.js"]
+    },
+    {
+      "id": "documentation-rules",
+      "source": "CLAUDE.md",
+      "topic": "governance",
+      "filePath": "CLAUDE.md#documentation-rules",
+      "summary": "Root directory should hold only README.md, PROJECT_STATUS.md, and CLAUDE.md. New documentation belongs under docs/ with guides separated. No completion reports, no emoji, and prefer code changes over docs.",
+      "keywords": ["documentation rules", "root files", "guidelines"],
+      "keyFiles": ["CLAUDE.md", "docs/README.md"]
+    },
+    {
+      "id": "commands-reference",
+      "source": "PROJECT_STATUS.md",
+      "topic": "tooling",
+      "filePath": "PROJECT_STATUS.md#commands",
+      "summary": "Key scripts: npm start (serve app), npm test / npm run test:watch / npm run test:coverage, and npm run test:legacy for compatibility. Browser console helpers: window.app.getLatencyStats(), window.container.get('audioIO').mode, and window.container.getServiceNames().",
+      "keywords": ["npm scripts", "development workflow", "latency stats"],
+      "keyFiles": ["package.json", "js/main.js"]
+    },
+    {
+      "id": "performance-bottlenecks",
+      "source": "CLAUDE.md",
+      "topic": "performance",
+      "filePath": "CLAUDE.md#performance-optimization-guidelines",
+      "summary": "Primary bottlenecks include ScriptProcessor fallback (buffer 2048), heavy FFT computations in spectral features, expressive feature extraction overhead, and Tone.js synthesizer complexity. Measurement strategy emphasizes p95 latency values and verifying Worklet mode before tuning.",
+      "keywords": ["bottlenecks", "FFT", "ScriptProcessor", "profiling"],
+      "keyFiles": ["js/audio-io.js", "js/features/spectral-features.js", "js/expressive-features.js", "js/continuous-synth.js"]
+    }
+  ],
+  "regexLibrary": [
+    {
+      "name": "service_locator_calls",
+      "pattern": "window\\.container\\.get\\('([A-Za-z0-9_-]+)'\\)",
+      "description": "Finds every dependency pulled from the AppContainer to trace service usage.",
+      "useCases": ["Audit DI usage", "Map service dependencies in JS files"]
+    },
+    {
+      "name": "config_loader_calls",
+      "pattern": "configManager\\.load\\([^)]*\\)",
+      "description": "Locate where configuration is initialized to ensure single-source-of-truth patterns are followed.",
+      "useCases": ["Verify configs load before usage", "Detect duplicate init calls"]
+    },
+    {
+      "name": "latency_logging",
+      "pattern": "window\\.app\\.getLatencyStats\\(\\)",
+      "description": "Surface instrumentation call sites tied to latency reporting.",
+      "useCases": ["Track performance instrumentation", "Document browser console helpers"]
+    },
+    {
+      "name": "audio_event_listeners",
+      "pattern": "audioContext\\.on(?:statechange|ended)|addEventListener\\(['\"](start|stop|statechange)['\"]",
+      "description": "Helps find audio lifecycle hooks (start/stop/state changes) across modules.",
+      "useCases": ["Understand audio lifecycle wiring", "Ensure cleanup handlers are present"]
+    },
+    {
+      "name": "console_logging",
+      "pattern": "console\\.(log|warn|error)\\(",
+      "description": "Counts remaining console statements when working toward the <50 log target.",
+      "useCases": ["Identify noisy logging", "Guide logging cleanup tasks"]
+    }
+  ]
+}

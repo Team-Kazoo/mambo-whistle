@@ -57,12 +57,14 @@ class KazooApp {
             helpBtn: document.getElementById('helpBtn'),
             helpToggle: document.getElementById('helpToggle'),
             helpContent: document.getElementById('helpContent'),
+            helpSection: document.getElementById('tipsSection'),
             warningBox: document.getElementById('warningBox'),
             warningText: document.getElementById('warningText'),
 
             //  模式切换
             modeToggle: document.getElementById('modeToggle'),
             modeText: document.getElementById('modeText'),
+            navLinks: document.querySelectorAll('[data-scroll-target]'),
 
             // 状态徽章
             instrumentStatus: document.getElementById('instrumentStatus'),
@@ -197,13 +199,32 @@ class KazooApp {
         });
 
         // 帮助
-        this.ui.helpBtn.addEventListener('click', () => {
-            this.ui.helpContent.classList.toggle('show');
-        });
+        if (this.ui.helpBtn) {
+            this.ui.helpBtn.addEventListener('click', () => {
+                this.openHelpSection();
+                this.scrollToSection('tipsSection');
+            });
+        }
 
-        this.ui.helpToggle.addEventListener('click', () => {
-            this.ui.helpContent.classList.toggle('show');
-        });
+        if (this.ui.helpToggle) {
+            this.ui.helpToggle.addEventListener('click', () => {
+                const isOpen = this.ui.helpContent.classList.toggle('show');
+                this.ui.helpToggle.setAttribute('aria-expanded', isOpen);
+                if (isOpen) {
+                    this.scrollToSection('tipsSection');
+                }
+            });
+        }
+
+        if (this.ui.navLinks) {
+            this.ui.navLinks.forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const targetId = link.dataset.scrollTarget;
+                    this.scrollToSection(targetId);
+                });
+            });
+        }
     }
 
     /**
@@ -671,59 +692,109 @@ class KazooApp {
      */
     initVisualizer() {
         const canvas = this.ui.pitchCanvas;
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
+        if (!canvas) {
+            return;
+        }
 
         this.visualizer = {
             ctx: canvas.getContext('2d'),
             history: [],
-            noteHistory: [],  // 存储音符信息
-            maxHistory: 200,
-            // 音高范围设置 (C2 到 C6)
+            maxHistory: 240,
             minFreq: 65.41,   // C2
             maxFreq: 1046.50, // C6
-            // 参考音符线 (C3, C4, C5)
             referenceNotes: [
                 { freq: 130.81, note: 'C3' },
                 { freq: 261.63, note: 'C4' },
                 { freq: 523.25, note: 'C5' }
-            ]
+            ],
+            lastFrame: null
         };
+
+        this.resizeVisualizer();
+        window.addEventListener('resize', () => this.resizeVisualizer());
     }
 
     /**
      * 更新可视化 - 简易音高曲线
      */
     updateVisualizer(pitchInfo) {
-        const { ctx, minFreq, maxFreq } = this.visualizer;
-        const canvas = this.ui.pitchCanvas;
+        if (!this.visualizer || !this.ui.pitchCanvas) {
+            return;
+        }
 
-        // 存储历史数据
-        this.visualizer.history.push(pitchInfo.frequency);
+        this.visualizer.history.push({
+            frequency: pitchInfo.frequency,
+            confidence: pitchInfo.confidence || 0
+        });
+
         if (this.visualizer.history.length > this.visualizer.maxHistory) {
             this.visualizer.history.shift();
         }
 
-        // 清空画布
-        ctx.fillStyle = '#f9fafb';
+        this.visualizer.lastFrame = pitchInfo;
+        this.drawVisualizer();
+    }
+
+    drawVisualizer() {
+        if (!this.visualizer || !this.ui.pitchCanvas) {
+            return;
+        }
+
+        const canvas = this.ui.pitchCanvas;
+        const ctx = this.visualizer.ctx;
+        const { minFreq, maxFreq, referenceNotes, history } = this.visualizer;
+
+        if (!ctx) {
+            return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const background = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        background.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+        background.addColorStop(1, 'rgba(13, 13, 15, 0.05)');
+        ctx.fillStyle = background;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // 绘制简单的音高曲线
-        if (this.visualizer.history.length > 1) {
-            ctx.strokeStyle = '#3b82f6';
-            ctx.lineWidth = 2;
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+        ctx.lineWidth = 1;
+        ctx.font = '12px Inter, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.textBaseline = 'bottom';
+
+        referenceNotes.forEach(ref => {
+            const normalized = (ref.freq - minFreq) / (maxFreq - minFreq);
+            const clamped = Math.min(Math.max(normalized, 0), 1);
+            const y = canvas.height - (clamped * canvas.height * 0.8) - canvas.height * 0.1;
+
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+            ctx.fillText(ref.note, 10, y - 4);
+        });
+        ctx.restore();
+
+        if (history.length > 1) {
+            const lineGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            lineGradient.addColorStop(0, 'rgba(0, 113, 227, 0.35)');
+            lineGradient.addColorStop(1, 'rgba(94, 92, 230, 0.75)');
+
+            ctx.lineWidth = 2.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
+            ctx.strokeStyle = lineGradient;
             ctx.beginPath();
 
-            const xStep = canvas.width / this.visualizer.maxHistory;
-            this.visualizer.history.forEach((freq, i) => {
-                const x = i * xStep;
-                const normalized = (freq - minFreq) / (maxFreq - minFreq);
-                const y = canvas.height - (normalized * canvas.height * 0.8) - canvas.height * 0.1;
+            const xStep = canvas.width / Math.max(history.length - 1, 1);
+            history.forEach((entry, index) => {
+                const x = index * xStep;
+                const normalized = (entry.frequency - minFreq) / (maxFreq - minFreq);
+                const clamped = Math.min(Math.max(normalized, 0), 1);
+                const y = canvas.height - (clamped * canvas.height * 0.8) - canvas.height * 0.1;
 
-                if (i === 0) {
+                if (index === 0) {
                     ctx.moveTo(x, y);
                 } else {
                     ctx.lineTo(x, y);
@@ -731,6 +802,58 @@ class KazooApp {
             });
 
             ctx.stroke();
+
+            const latest = history[history.length - 1];
+            const latestX = (history.length - 1) * xStep;
+            const latestNormalized = (latest.frequency - minFreq) / (maxFreq - minFreq);
+            const latestClamped = Math.min(Math.max(latestNormalized, 0), 1);
+            const latestY = canvas.height - (latestClamped * canvas.height * 0.8) - canvas.height * 0.1;
+
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.strokeStyle = 'rgba(0, 113, 227, 0.8)';
+            ctx.lineWidth = 1.5;
+            ctx.arc(latestX, latestY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+    }
+
+    resizeVisualizer() {
+        if (!this.visualizer || !this.ui.pitchCanvas) {
+            return;
+        }
+
+        const canvas = this.ui.pitchCanvas;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        this.visualizer.ctx = canvas.getContext('2d');
+        this.drawVisualizer();
+    }
+
+    openHelpSection() {
+        if (!this.ui.helpContent) {
+            return;
+        }
+
+        if (!this.ui.helpContent.classList.contains('show')) {
+            this.ui.helpContent.classList.add('show');
+        }
+
+        if (this.ui.helpToggle) {
+            this.ui.helpToggle.setAttribute('aria-expanded', true);
+        }
+    }
+
+    scrollToSection(targetId) {
+        if (!targetId) {
+            return;
+        }
+
+        const section = document.getElementById(targetId);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 

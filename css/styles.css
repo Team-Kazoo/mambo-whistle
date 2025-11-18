@@ -16,6 +16,12 @@
     --red-500: #ef4444;
     --shadow: 0 1px 3px rgba(0,0,0,0.1);
     --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --apple-base: #f5f5f7;
+    --apple-dark: #1d1d1f;
+    --apple-blue: #0071e3;
+    --apple-blue-hover: #0077ed;
+    --apple-gray: #86868b;
+    --apple-ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Global Reset */
@@ -25,12 +31,184 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
-    background: var(--white);
-    color: var(--gray-900);
+    font-family: "Inter", "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--apple-base);
+    color: var(--apple-dark);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+}
+
+.scroll-section {
+    scroll-margin-top: 120px;
+}
+
+a {
+    color: var(--apple-blue);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.nav-link {
+    color: #424245;
+    font-weight: 500;
+    transition: color 0.3s var(--apple-ease);
+}
+
+.nav-link:hover {
+    color: var(--apple-dark);
+}
+
+.inline-link {
+    color: var(--apple-blue);
+    font-weight: 600;
+}
+
+.inline-link:hover {
+    text-decoration: underline;
+}
+
+.apple-glass-light {
+    background-color: rgba(255, 255, 255, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.apple-glass-dark {
+    background-color: rgba(29, 29, 31, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.apple-bento {
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    padding: 32px;
+    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.08);
+    backdrop-filter: saturate(180%) blur(30px);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+}
+
+.status-card {
+    border-radius: 24px;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+    backdrop-filter: saturate(180%) blur(30px);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.status-ready {
+    background: rgba(0, 113, 227, 0.15);
+    color: var(--apple-blue);
+}
+
+.status-warning {
+    background: rgba(255, 193, 7, 0.18);
+    color: #b45309;
+}
+
+.status-error {
+    background: rgba(239, 68, 68, 0.18);
+    color: #b91c1c;
+}
+
+.start-cta,
+.stop-cta {
+    width: 100%;
+    border: none;
+    border-radius: 999px;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.95rem 2.5rem;
+    transition: transform 0.25s var(--apple-ease), box-shadow 0.25s var(--apple-ease);
+    cursor: pointer;
+}
+
+.start-cta {
+    background: linear-gradient(120deg, var(--apple-blue), #5e5ce6);
+    color: var(--white);
+    box-shadow: 0 25px 45px rgba(0, 113, 227, 0.35);
+}
+
+.start-cta:hover {
+    transform: translateY(-2px) scale(1.01);
+}
+
+.start-cta:active {
+    transform: scale(0.99);
+}
+
+.stop-cta {
+    background: rgba(29, 29, 31, 0.9);
+    color: var(--white);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.stop-cta:hover {
+    transform: translateY(-1px) scale(1.01);
+}
+
+.helper-text {
+    font-size: 0.9rem;
+    color: var(--apple-gray);
+}
+
+.tip-card {
+    border-radius: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+    backdrop-filter: saturate(180%) blur(30px);
+    -webkit-backdrop-filter: saturate(180%) blur(30px);
+}
+
+.warning-box {
+    border-radius: 20px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: rgba(255, 255, 255, 0.8);
+    padding: 16px;
+    box-shadow: 0 15px 35px rgba(239, 68, 68, 0.15);
+}
+
+.warning-box.hidden {
+    display: none !important;
+}
+
+.fade-up {
+    animation: fadeUp 1s var(--apple-ease) both;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Utility Classes (not covered by Tailwind) */
@@ -42,8 +220,8 @@ body {
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 44px;
-    height: 24px;
+    width: 48px;
+    height: 26px;
     cursor: pointer;
 }
 
@@ -55,41 +233,39 @@ body {
 
 .toggle-slider {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--gray-300);
-    border-radius: 24px;
-    transition: 0.3s;
+    inset: 0;
+    background-color: rgba(17, 17, 17, 0.15);
+    border-radius: 999px;
+    transition: background 0.3s var(--apple-ease);
 }
 
 .toggle-slider:before {
-    position: absolute;
     content: "";
-    height: 18px;
-    width: 18px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #fff;
     border-radius: 50%;
-    transition: 0.3s;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.3s var(--apple-ease), box-shadow 0.3s var(--apple-ease);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-switch input:checked + .toggle-slider {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--apple-blue), #5e5ce6);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(20px);
+    transform: translateX(22px);
+    box-shadow: 0 4px 10px rgba(94, 92, 230, 0.5);
 }
 
 /* Help Content Accordion */
 .help-content {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.35s var(--apple-ease);
 }
 
 .help-content.show {
@@ -195,5 +371,15 @@ body {
     .modal {
         padding: 24px;
         width: 95%;
+    }
+}
+
+@media (max-width: 640px) {
+    .apple-bento {
+        padding: 24px;
+    }
+
+    .status-card {
+        padding: 20px;
     }
 }
