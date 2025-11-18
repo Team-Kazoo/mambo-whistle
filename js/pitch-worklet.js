@@ -20,227 +20,63 @@
  */
 
 /**
- * CooleyTukeyFFT - Fast Fourier Transform Implementation
+ *  简化 FFT 实现
  *
- * ⚠️ IMPORTANT: This is a copy of js/utils/fft.js for AudioWorklet compatibility
- * AudioWorklet cannot use ES6 imports, so we must inline the code here.
- * The canonical implementation is in js/utils/fft.js (exported for testing).
- * Any changes must be synchronized between both files.
+ * 用于计算频谱特征 (Spectral Centroid, Flatness)
+ * 替代主线程的 AnalyserNode，使 Worklet 自给自足
  *
- * Radix-2 Decimation-In-Time (DIT) Cooley-Tukey algorithm
- * Based on: https://gist.github.com/antimatter15/0349ca7d479236fdcdbb
- *
- * Features:
- * - In-place computation (minimal memory)
- * - Pre-computed twiddle factors (faster)
- * - Bit-reversal permutation
- * - O(N log N) complexity
- *
- * Phase 2 Optimization: Replace O(N²) algorithms
- * - YIN autocorrelation: 4.2M ops → 22k ops (~200x faster)
- * - Power spectrum: 2.1M ops → 11k ops (~200x faster)
- * - Expected latency reduction: ~50ms
+ * 算法: DFT (非 Cooley-Tukey FFT，简化实现)
+ * 性能: 2048 点 DFT 约 0.5-1ms (可接受)
  */
-class CooleyTukeyFFT {
+class SimpleFFT {
     constructor(size = 2048) {
-        if ((size & (size - 1)) !== 0) {
-            throw new Error(`FFT size must be power of 2, got ${size}`);
-        }
-
         this.size = size;
         this.halfSize = size / 2;
-        this.log2Size = Math.log2(size);
 
-        // Pre-compute twiddle factors
-        this._precomputeTwiddles();
-        this._precomputeBitReversal();
-
-        // Working buffers
-        this.real = new Float32Array(size);
-        this.imag = new Float32Array(size);
+        // 工作缓冲区
         this.powerSpectrum = new Float32Array(this.halfSize);
-        this.autocorrelation = new Float32Array(size);
-    }
-
-    _precomputeTwiddles() {
-        this.twiddleReal = new Float32Array(this.halfSize);
-        this.twiddleImag = new Float32Array(this.halfSize);
-
-        for (let i = 0; i < this.halfSize; i++) {
-            const angle = -2 * Math.PI * i / this.size;
-            this.twiddleReal[i] = Math.cos(angle);
-            this.twiddleImag[i] = Math.sin(angle);
-        }
-    }
-
-    _precomputeBitReversal() {
-        this.bitReversalIndices = new Uint32Array(this.size);
-
-        for (let i = 0; i < this.size; i++) {
-            this.bitReversalIndices[i] = this._reverseBits(i, this.log2Size);
-        }
-    }
-
-    _reverseBits(x, bits) {
-        let reversed = 0;
-        for (let i = 0; i < bits; i++) {
-            reversed = (reversed << 1) | (x & 1);
-            x >>= 1;
-        }
-        return reversed;
     }
 
     /**
-     * In-place radix-2 DIT FFT
-     */
-    fft(re, im, inverse = false) {
-        const N = re.length;
-
-        if (N !== this.size) {
-            throw new Error(`FFT size mismatch: expected ${this.size}, got ${N}`);
-        }
-
-        // Bit-reversal permutation
-        for (let i = 0; i < N; i++) {
-            const j = this.bitReversalIndices[i];
-            if (j > i) {
-                [re[i], re[j]] = [re[j], re[i]];
-                [im[i], im[j]] = [im[j], im[i]];
-            }
-        }
-
-        // Iterative FFT (Cooley-Tukey butterflies)
-        for (let size = 2; size <= N; size *= 2) {
-            const halfSize = size / 2;
-            const tableStep = N / size;
-
-            for (let i = 0; i < N; i += size) {
-                for (let j = 0; j < halfSize; j++) {
-                    const k = j * tableStep;
-
-                    let twiddleR = this.twiddleReal[k];
-                    let twiddleI = this.twiddleImag[k];
-
-                    if (inverse) {
-                        twiddleI = -twiddleI;
-                    }
-
-                    const evenIdx = i + j;
-                    const oddIdx = i + j + halfSize;
-
-                    const tR = twiddleR * re[oddIdx] - twiddleI * im[oddIdx];
-                    const tI = twiddleR * im[oddIdx] + twiddleI * re[oddIdx];
-
-                    const tempR = re[evenIdx];
-                    const tempI = im[evenIdx];
-
-                    re[evenIdx] = tempR + tR;
-                    im[evenIdx] = tempI + tI;
-
-                    re[oddIdx] = tempR - tR;
-                    im[oddIdx] = tempI - tI;
-                }
-            }
-        }
-
-        // IFFT: scale by 1/N
-        if (inverse) {
-            for (let i = 0; i < N; i++) {
-                re[i] /= N;
-                im[i] /= N;
-            }
-        }
-    }
-
-    ifft(re, im) {
-        this.fft(re, im, true);
-    }
-
-    /**
-     * Compute power spectrum from real-valued input
-     * Returns |X[k]|² for k = 0, 1, ..., N/2-1
+     * 计算功率谱
+     * 只计算前 halfSize 个频率 bin (足够用于特征提取)
+     *
+     * @param {Float32Array} input - 时域信号 (长度 = size)
+     * @returns {Float32Array} 功率谱 (长度 = halfSize)
      */
     computePowerSpectrum(input) {
         if (input.length !== this.size) {
-            throw new Error(`Input size mismatch: expected ${this.size}, got ${input.length}`);
+            console.error('[SimpleFFT] Input size mismatch:', input.length, 'expected', this.size);
+            return this.powerSpectrum;
         }
 
-        this.real.set(input);
-        this.imag.fill(0);
-
-        this.fft(this.real, this.imag);
-
+        // DFT: X[k] = Σ x[n] * e^(-j*2π*k*n/N)
+        // 分解为: real = Σ x[n]*cos(2πkn/N), imag = Σ x[n]*sin(2πkn/N)
         for (let k = 0; k < this.halfSize; k++) {
-            this.powerSpectrum[k] = this.real[k] * this.real[k] + this.imag[k] * this.imag[k];
+            let real = 0;
+            let imag = 0;
+
+            for (let n = 0; n < this.size; n++) {
+                const angle = (2 * Math.PI * k * n) / this.size;
+                real += input[n] * Math.cos(angle);
+                imag -= input[n] * Math.sin(angle); // 注意负号
+            }
+
+            // 功率谱 = |X[k]|^2 = real^2 + imag^2
+            this.powerSpectrum[k] = real * real + imag * imag;
         }
 
         return this.powerSpectrum;
     }
 
     /**
-     * Compute autocorrelation using Wiener-Khinchin theorem
+     * 计算 Spectral Centroid (质心频率)
      *
-     * Algorithm:
-     * 1. Zero-pad input to 2N (avoid circular convolution)
-     * 2. FFT → multiply by conjugate → IFFT
-     * 3. Normalize and return first N samples
+     * 表示频谱的"重心"位置，与音色亮度正相关
      *
-     * Used for FFT-based YIN pitch detection
-     */
-    computeAutocorrelation(input) {
-        const N = input.length;
-
-        if (N > this.halfSize) {
-            throw new Error(`Input too large: max ${this.halfSize}, got ${N}`);
-        }
-
-        // Zero-pad to 2N
-        this.real.fill(0);
-        this.imag.fill(0);
-        this.real.set(input);
-
-        // Subtract mean (critical for autocorrelation)
-        let mean = 0;
-        for (let i = 0; i < N; i++) {
-            mean += this.real[i];
-        }
-        mean /= N;
-
-        for (let i = 0; i < N; i++) {
-            this.real[i] -= mean;
-        }
-
-        // FFT
-        this.fft(this.real, this.imag);
-
-        // Multiply by conjugate (power spectrum)
-        for (let k = 0; k < this.size; k++) {
-            const re = this.real[k];
-            const im = this.imag[k];
-            this.real[k] = re * re + im * im;
-            this.imag[k] = 0;
-        }
-
-        // IFFT
-        this.ifft(this.real, this.imag);
-
-        // Extract first N samples
-        for (let i = 0; i < N; i++) {
-            this.autocorrelation[i] = this.real[i];
-        }
-
-        return this.autocorrelation.subarray(0, N);
-    }
-
-    /**
-     * Compute Spectral Centroid (brightness)
-     *
-     * Represents the "center of mass" of the spectrum
-     * Higher values = brighter timbre
-     *
-     * @param {Float32Array} powerSpectrum - Power spectrum
-     * @param {number} sampleRate - Sample rate
-     * @returns {number} Centroid frequency (Hz)
+     * @param {Float32Array} powerSpectrum - 功率谱
+     * @param {number} sampleRate - 采样率
+     * @returns {number} 质心频率 (Hz)
      */
     computeSpectralCentroid(powerSpectrum, sampleRate) {
         let weightedSum = 0;
@@ -256,14 +92,14 @@ class CooleyTukeyFFT {
     }
 
     /**
-     * Compute Spectral Flatness (breathiness)
+     * 计算 Spectral Flatness (频谱平坦度)
      *
-     * Geometric mean / Arithmetic mean, range [0, 1]
-     * Close to 1: white noise (breathy)
-     * Close to 0: pure tone (clear)
+     * 几何平均 / 算术平均，范围 [0, 1]
+     * 接近 1: 白噪声 (气声强)
+     * 接近 0: 纯音 (气声弱)
      *
-     * @param {Float32Array} powerSpectrum - Power spectrum
-     * @returns {number} Flatness [0, 1]
+     * @param {Float32Array} powerSpectrum - 功率谱
+     * @returns {number} 平坦度 [0, 1]
      */
     computeSpectralFlatness(powerSpectrum) {
         let geometricMean = 0;
@@ -438,16 +274,10 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
             minFrequency: 80,        // 待更新
             maxFrequency: 800,       // 待更新
             smoothingSize: 5,
-            minVolumeThreshold: 0.01,
-            // ⭐ Phase 2: FFT optimization flag
-            useFFT: true             // Enable O(N log N) FFT autocorrelation (default: true)
+            minVolumeThreshold: 0.01
         };
 
         console.log('[PitchWorklet] ⏳ 等待主线程配置下发...');
-
-        // ⭐ Phase 2: Initialize CooleyTukeyFFT for YIN autocorrelation (4096 for zero-padding)
-        this.fftForYIN = new CooleyTukeyFFT(4096);
-        console.log('[PitchWorklet] ⭐ CooleyTukeyFFT initialized for YIN (4096-point, O(N log N))');
 
         // 初始化 YIN 检测器
         this.detector = this._createYINDetector(this.config);
@@ -463,9 +293,9 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
         this.accumulationIndex = 0;
         this.accumulationFull = false;
 
-        // ⭐ Phase 2: Replace SimpleFFT with CooleyTukeyFFT for power spectrum
-        this.fft = new CooleyTukeyFFT(2048);
-        console.log('[PitchWorklet] ⭐ CooleyTukeyFFT initialized for spectral features (2048-point, O(N log N))');
+        //  FFT 处理器
+        this.fft = new SimpleFFT(2048);
+        console.log('[PitchWorklet]  SimpleFFT 初始化完成 (2048 点)');
 
         //  EMA 平滑滤波器
         this.volumeFilter = new EMAFilter(0.3);       // volume 平滑
@@ -516,19 +346,11 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
     /**
      * 创建 YIN 音高检测器
      * 基于 Pitchfinder 库的 YIN 实现
-     *
-     * ⭐ Phase 2: FFT-optimized autocorrelation path
-     * - If useFFT=true: O(N log N) via Wiener-Khinchin theorem
-     * - If useFFT=false: O(N²) naive difference function (fallback)
      */
     _createYINDetector(config) {
         const threshold = config.threshold || 0.1;
         const probabilityThreshold = 0.1;
         const sampleRate = config.sampleRate;
-        const useFFT = config.useFFT !== undefined ? config.useFFT : true;
-
-        // Bind 'this' context to access this.fftForYIN
-        const fftForYIN = this.fftForYIN;
 
         return function detectPitch(buffer) {
             if (!buffer || buffer.length < 2) {
@@ -539,29 +361,15 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
             const yinBuffer = new Float32Array(yinBufferSize);
 
             // Step 1: 计算差分函数
-            // ⭐ Phase 2: FFT-optimized path
-            if (useFFT && fftForYIN) {
-                // FFT-based autocorrelation (O(N log N))
-                // YIN difference function: d(τ) = r(0) + r(0) - 2*r(τ)
-                // where r(τ) is autocorrelation
-                const autocorr = fftForYIN.computeAutocorrelation(buffer);
-                const r0 = autocorr[0];
+            let delta;
+            for (let t = 0; t < yinBufferSize; t++) {
+                yinBuffer[t] = 0;
+            }
 
-                for (let t = 0; t < yinBufferSize; t++) {
-                    yinBuffer[t] = r0 + r0 - 2 * autocorr[t];
-                }
-            } else {
-                // Naive O(N²) difference function (fallback)
-                let delta;
-                for (let t = 0; t < yinBufferSize; t++) {
-                    yinBuffer[t] = 0;
-                }
-
-                for (let t = 1; t < yinBufferSize; t++) {
-                    for (let i = 0; i < yinBufferSize; i++) {
-                        delta = buffer[i] - buffer[i + t];
-                        yinBuffer[t] += delta * delta;
-                    }
+            for (let t = 1; t < yinBufferSize; t++) {
+                for (let i = 0; i < yinBufferSize; i++) {
+                    delta = buffer[i] - buffer[i + t];
+                    yinBuffer[t] += delta * delta;
                 }
             }
 
