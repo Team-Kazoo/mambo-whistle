@@ -226,68 +226,16 @@ class CooleyTukeyFFT {
 
         return this.autocorrelation.subarray(0, N);
     }
-}
-
-/**
- *  简化 FFT 实现 (DEPRECATED - replaced by CooleyTukeyFFT)
- *
- * 用于计算频谱特征 (Spectral Centroid, Flatness)
- * 替代主线程的 AnalyserNode，使 Worklet 自给自足
- *
- * 算法: DFT (非 Cooley-Tukey FFT，简化实现)
- * 性能: 2048 点 DFT 约 0.5-1ms (可接受)
- *
- * ⚠️ Phase 2: This class will be removed after migration to CooleyTukeyFFT
- */
-class SimpleFFT {
-    constructor(size = 2048) {
-        this.size = size;
-        this.halfSize = size / 2;
-
-        // 工作缓冲区
-        this.powerSpectrum = new Float32Array(this.halfSize);
-    }
 
     /**
-     * 计算功率谱
-     * 只计算前 halfSize 个频率 bin (足够用于特征提取)
+     * Compute Spectral Centroid (brightness)
      *
-     * @param {Float32Array} input - 时域信号 (长度 = size)
-     * @returns {Float32Array} 功率谱 (长度 = halfSize)
-     */
-    computePowerSpectrum(input) {
-        if (input.length !== this.size) {
-            console.error('[SimpleFFT] Input size mismatch:', input.length, 'expected', this.size);
-            return this.powerSpectrum;
-        }
-
-        // DFT: X[k] = Σ x[n] * e^(-j*2π*k*n/N)
-        // 分解为: real = Σ x[n]*cos(2πkn/N), imag = Σ x[n]*sin(2πkn/N)
-        for (let k = 0; k < this.halfSize; k++) {
-            let real = 0;
-            let imag = 0;
-
-            for (let n = 0; n < this.size; n++) {
-                const angle = (2 * Math.PI * k * n) / this.size;
-                real += input[n] * Math.cos(angle);
-                imag -= input[n] * Math.sin(angle); // 注意负号
-            }
-
-            // 功率谱 = |X[k]|^2 = real^2 + imag^2
-            this.powerSpectrum[k] = real * real + imag * imag;
-        }
-
-        return this.powerSpectrum;
-    }
-
-    /**
-     * 计算 Spectral Centroid (质心频率)
+     * Represents the "center of mass" of the spectrum
+     * Higher values = brighter timbre
      *
-     * 表示频谱的"重心"位置，与音色亮度正相关
-     *
-     * @param {Float32Array} powerSpectrum - 功率谱
-     * @param {number} sampleRate - 采样率
-     * @returns {number} 质心频率 (Hz)
+     * @param {Float32Array} powerSpectrum - Power spectrum
+     * @param {number} sampleRate - Sample rate
+     * @returns {number} Centroid frequency (Hz)
      */
     computeSpectralCentroid(powerSpectrum, sampleRate) {
         let weightedSum = 0;
@@ -303,14 +251,14 @@ class SimpleFFT {
     }
 
     /**
-     * 计算 Spectral Flatness (频谱平坦度)
+     * Compute Spectral Flatness (breathiness)
      *
-     * 几何平均 / 算术平均，范围 [0, 1]
-     * 接近 1: 白噪声 (气声强)
-     * 接近 0: 纯音 (气声弱)
+     * Geometric mean / Arithmetic mean, range [0, 1]
+     * Close to 1: white noise (breathy)
+     * Close to 0: pure tone (clear)
      *
-     * @param {Float32Array} powerSpectrum - 功率谱
-     * @returns {number} 平坦度 [0, 1]
+     * @param {Float32Array} powerSpectrum - Power spectrum
+     * @returns {number} Flatness [0, 1]
      */
     computeSpectralFlatness(powerSpectrum) {
         let geometricMean = 0;
@@ -510,9 +458,9 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
         this.accumulationIndex = 0;
         this.accumulationFull = false;
 
-        //  FFT 处理器
-        this.fft = new SimpleFFT(2048);
-        console.log('[PitchWorklet]  SimpleFFT 初始化完成 (2048 点)');
+        // ⭐ Phase 2: Replace SimpleFFT with CooleyTukeyFFT for power spectrum
+        this.fft = new CooleyTukeyFFT(2048);
+        console.log('[PitchWorklet] ⭐ CooleyTukeyFFT initialized for spectral features (2048-point, O(N log N))');
 
         //  EMA 平滑滤波器
         this.volumeFilter = new EMAFilter(0.3);       // volume 平滑
