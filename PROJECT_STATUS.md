@@ -100,10 +100,10 @@ Real-time voice-to-instrument system using Web Audio API.
 ## Tech Stack
 
 - **Audio**: Web Audio API + AudioWorklet
-- **Pitch Detection**: YIN algorithm
+- **Pitch Detection**: YIN algorithm (FFT-optimized O(N log N))
 - **Synthesis**: Tone.js v15.1.22
 - **DI Container**: Custom AppContainer
-- **Tests**: Vitest (1 suite, 19 tests passing)
+- **Tests**: Vitest (5 suites, 198 tests passing)
 
 ---
 
@@ -122,24 +122,28 @@ Real-time voice-to-instrument system using Web Audio API.
 
 ### Audio Pipeline
 ```
-Microphone → AudioWorklet → YIN Detection → Expression Extraction → Synthesizer → Output
+Microphone → AudioWorklet (128 samples) → YIN Detection (FFT) → Expression → Synthesizer → Output
+             2.9ms @ 44.1kHz              O(N log N)          Features      Tone.js
 ```
 
 ---
 
 ## Known Problems
 
-### P0: Latency (Critical)
-- **Current**: 180ms
-- **Target**: < 50ms
-- **Gap**: 3.6x over goal
-- **Measurement**: `window.app.getLatencyStats()` now available
-- **Next**: Find bottleneck (Worklet fallback? FFT? Synthesizer?)
+### P0: Latency (Improving)
+- **Current**: ~129ms (estimated, **pending browser verification**)
+- **Previous**: 180ms
+- **Target**: < 50ms (v1.0), < 90ms (v0.3.0)
+- **Gap**: 2.6x over v1.0 goal, 1.4x over v0.3.0 goal
+- **Improvement**: -51ms (29%) via Phase 2 FFT optimization
+- **Measurement**: `window.app.getLatencyStats()` available
+- **Next**: Manual browser testing → Phase 3 (Adaptive buffer size)
 
-### P1: Testing
-- Only 1 real test suite (AppContainer)
-- Need tests for: PitchDetector, AudioIO, Synthesizers, Config
-- Old tests were fake (custom framework with predefined "success")
+### P1: Testing (IMPROVED)
+- **Test suites**: 5 (AppContainer, AudioIO, PitchDetector, Performance, FFT)
+- **Tests**: 198 passing
+- **Coverage**: ~10% (target 40%)
+- **Quality**: All real tests (no fake/mocked tests)
 
 ### P2: Documentation
 - 192 files remaining (still too many)
