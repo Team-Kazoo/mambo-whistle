@@ -14,13 +14,14 @@
 
 /**
  * @typedef {Object} InstrumentPreset
- * @property {string} type - 合成器类型: 'MonoSynth' | 'FMSynth' | 'AMSynth'
+ * @property {string} type - 合成器类型: 'MonoSynth' | 'FMSynth' | 'AMSynth' | 'KarplusStrong'
  * @property {Object} oscillator - 振荡器配置
  * @property {string} oscillator.type - 波形类型: 'sawtooth' | 'sine' | 'square' | 'triangle'
  * @property {Object} [modulation] - 调制配置 (仅 FM/AM)
  * @property {string} modulation.type - 调制波形
  * @property {number} modulation.harmonicity - 谐波比率
  * @property {number} modulation.modulationIndex - 调制指数
+ * @property {number} [dampening] - 阻尼系数 (仅 KarplusStrong), 范围 0-1
  * @property {Object} envelope - ADSR 包络
  * @property {number} envelope.attack - Attack 时间 (秒)
  * @property {number} envelope.decay - Decay 时间 (秒)
@@ -126,8 +127,9 @@ export const DEFAULT_INSTRUMENT_PRESETS = {
     },
 
     guitar: {
-        type: 'MonoSynth',
-        oscillator: { type: 'sawtooth' }, // Approximating string
+        type: 'KarplusStrong', // Physical Modeling
+        dampening: 0.96,       // String resonance (0-1)
+        oscillator: { type: 'sawtooth' }, // Ignored (uses Noise)
         envelope: {
             attack: 0.005,
             decay: 0.4,
@@ -142,7 +144,7 @@ export const DEFAULT_INSTRUMENT_PRESETS = {
             sustain: 0.2,
             release: 0.5
         },
-        portamento: 0.015
+        portamento: 0.01 // Fast slide
     },
 
     synth: {
@@ -178,11 +180,9 @@ export function validateInstrumentPreset(preset) {
     // 默认类型为 MonoSynth
     if (!preset.type) preset.type = 'MonoSynth';
 
-    if (!['MonoSynth', 'FMSynth', 'AMSynth'].includes(preset.type)) {
+    if (!['MonoSynth', 'FMSynth', 'AMSynth', 'KarplusStrong'].includes(preset.type)) {
         errors.push(`无效的合成器类型: ${preset.type}`);
     }
-
-    // 验证振荡器
     if (!preset.oscillator) {
         errors.push('缺少 oscillator 配置');
     } else if (!['sawtooth', 'sine', 'square', 'triangle'].includes(preset.oscillator.type)) {
