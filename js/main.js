@@ -82,7 +82,15 @@ class KazooApp {
             pitchCanvas: document.getElementById('pitchCanvas'),
 
             // 乐器按钮
-            instrumentBtns: document.querySelectorAll('.instrument-btn')
+            instrumentBtns: document.querySelectorAll('.instrument-btn'),
+
+            // Auto-Tune 控件
+            autotuneToggle: document.getElementById('autotuneToggle'),
+            autotuneControls: document.getElementById('autotuneControls'),
+            correctionSlider: document.getElementById('correctionSlider'),
+            correctionValue: document.getElementById('correctionValue'),
+            scaleSelect: document.getElementById('scaleSelect'),
+            keySelect: document.getElementById('keySelect')
         };
 
         // 可视化设置
@@ -220,6 +228,71 @@ class KazooApp {
                     const targetId = link.dataset.scrollTarget;
                     this.scrollToSection(targetId);
                 });
+            });
+        }
+
+        // Auto-Tune 控件
+        if (this.ui.autotuneToggle) {
+            this.ui.autotuneToggle.addEventListener('click', () => {
+                const isEnabled = this.ui.autotuneToggle.classList.toggle('bg-blue-600');
+                this.ui.autotuneToggle.classList.toggle('bg-gray-300');
+
+                // 切换滑块位置
+                const slider = this.ui.autotuneToggle.querySelector('span');
+                if (isEnabled) {
+                    slider.classList.add('translate-x-6');
+                } else {
+                    slider.classList.remove('translate-x-6');
+                }
+
+                // 显示/隐藏控制面板
+                this.ui.autotuneControls.classList.toggle('hidden', !isEnabled);
+
+                // 应用到合成器
+                if (this.currentEngine && this.currentEngine.setAutoTune) {
+                    const amount = parseFloat(this.ui.correctionSlider.value) / 100;
+                    this.currentEngine.setAutoTune(isEnabled, amount);
+                    console.log(`[Auto-Tune] ${isEnabled ? 'Enabled' : 'Disabled'} (${Math.round(amount * 100)}%)`);
+                }
+            });
+        }
+
+        if (this.ui.correctionSlider) {
+            this.ui.correctionSlider.addEventListener('input', (e) => {
+                const value = parseInt(e.target.value);
+                this.ui.correctionValue.textContent = `${value}%`;
+
+                // 应用到合成器
+                if (this.currentEngine && this.currentEngine.setAutoTune) {
+                    const isEnabled = this.ui.autotuneToggle.classList.contains('bg-blue-600');
+                    this.currentEngine.setAutoTune(isEnabled, value / 100);
+                }
+            });
+        }
+
+        if (this.ui.scaleSelect) {
+            this.ui.scaleSelect.addEventListener('change', (e) => {
+                const scale = e.target.value;
+                const key = this.ui.keySelect.value;
+
+                // 应用到合成器
+                if (this.currentEngine && this.currentEngine.setAutoTuneScale) {
+                    this.currentEngine.setAutoTuneScale(scale, key);
+                    console.log(`[Auto-Tune] Scale changed to ${scale} in ${key}`);
+                }
+            });
+        }
+
+        if (this.ui.keySelect) {
+            this.ui.keySelect.addEventListener('change', (e) => {
+                const key = e.target.value;
+                const scale = this.ui.scaleSelect.value;
+
+                // 应用到合成器
+                if (this.currentEngine && this.currentEngine.setAutoTuneScale) {
+                    this.currentEngine.setAutoTuneScale(scale, key);
+                    console.log(`[Auto-Tune] Key changed to ${key} (${scale})`);
+                }
             });
         }
     }
