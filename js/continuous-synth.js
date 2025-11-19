@@ -8,10 +8,11 @@
  * - 平滑的频率过渡（Portamento/滑音效果）
  * - 保留每个乐器的独特音色和包络特征
  * - 捕捉微妙的音乐表现力（颤音、滑音、音量变化）
+ * - v0.4.1: 集成 Pitch Correction (Auto-Tune)
  *
  * 架构对比：
  * 旧: PitchDetector → Note("C4") → triggerAttack("C4") → 固定频率
- * 新: PitchDetector → Frequency(Hz) → 平滑 → oscillator.frequency → 实时跟随
+ * 新: PitchDetector → Frequency(Hz) → [PitchCorrector] → 平滑 → oscillator.frequency → 实时跟随
  *
  * P0 修复:
  * - 乐器预设从代码分离到 instrument-presets.js
@@ -20,8 +21,10 @@
  *
  * @class ContinuousSynthEngine
  * @author Kazoo Proto Team
- * @version 2.0.1-alpha
+ * @version 2.1.0-alpha (with Pitch Correction)
  */
+
+import { PitchCorrector } from './audio/pitch-corrector.js';
 
 class ContinuousSynthEngine {
     /**
@@ -159,6 +162,14 @@ class ContinuousSynthEngine {
         // 置信度阈值 (从集中式配置读取)
         this.minConfidence = options.appConfig?.pitchDetector?.minConfidence ?? 0.05;  // 🔥 修复: 从配置读取
 
+        // Pitch Correction (Auto-Tune)
+        this.pitchCorrector = new PitchCorrector({
+            correctionAmount: 0, // 默认关闭(0%修正)
+            scale: 'CHROMATIC',
+            key: 'C'
+        });
+        this.autotuneEnabled = false; // Auto-Tune 开关
+
         // 无声检测机制（防止停止哼唱后声音不停）
         this.silenceTimeout = 300;  // 300ms无有效音高则停止
         this.lastValidPitchTime = 0;
@@ -279,7 +290,7 @@ class ContinuousSynthEngine {
     processPitchFrame(pitchFrame) {
         if (!pitchFrame || !this.currentSynth) return;
 
-        const {
+        let {
             frequency,
             confidence,
             cents,           //  音分偏移
@@ -288,6 +299,13 @@ class ContinuousSynthEngine {
             articulation,    //  起音状态
             volumeLinear     //  音量
         } = pitchFrame;
+
+        // Apply Pitch Correction (Auto-Tune) if enabled
+        if (this.autotuneEnabled && frequency > 0) {
+            const corrected = this.pitchCorrector.correct(frequency, confidence);
+            frequency = corrected.frequency;
+            cents = corrected.cents; // 使用修正后的cents值
+        }
 
         const now = Date.now();
 
@@ -676,6 +694,39 @@ class ContinuousSynthEngine {
         if (this.reverb) {
             this.reverb.wet.value = wetness;
         }
+    }
+
+    /**
+     * 启用/禁用 Auto-Tune
+     * @param {boolean} enabled - 是否启用
+     * @param {number} [amount=0.5] - 修正强度 (0-1)
+     */
+    setAutoTune(enabled, amount = 0.5) {
+        this.autotuneEnabled = enabled;
+        if (enabled) {
+            this.pitchCorrector.setCorrectionAmount(amount);
+        } else {
+            this.pitchCorrector.setCorrectionAmount(0);
+        }
+        console.log(`[ContinuousSynth] Auto-Tune: ${enabled ? 'ON' : 'OFF'} (${(amount * 100).toFixed(0)}%)`);
+    }
+
+    /**
+     * 设置 Auto-Tune 音阶
+     * @param {string} scale - 音阶类型 (CHROMATIC, MAJOR, MINOR, etc.)
+     * @param {string} key - 调号 (C, C#, D, ...)
+     */
+    setAutoTuneScale(scale, key) {
+        this.pitchCorrector.setScale(scale, key);
+        console.log(`[ContinuousSynth] Auto-Tune Scale: ${scale}, Key: ${key}`);
+    }
+
+    /**
+     * 获取 Auto-Tune 统计信息
+     * @returns {Object} 统计数据
+     */
+    getAutoTuneStats() {
+        return this.pitchCorrector.getStats();
     }
 
     /**
