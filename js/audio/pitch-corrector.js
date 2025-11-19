@@ -3,15 +3,12 @@
  *
  * 功能:
  * - 将检测到的音高自动"吸附"到最近的正确音高
- * - 支持可调的修正强度(0% = 不修正, 100% = 完全修正)
+ * - 支持可调的修正速度 (Retune Speed): 0ms (Robot) -> 200ms (Natural)
  * - 支持音阶过滤(只修正到特定音阶,如C大调、A小调等)
- *
- * 实现方法:
- * - 方法1: 简单量化 (Pitch Quantization) - 低延迟,适合实时
- * - 方法2: (未来) Phase Vocoder - 音质更好但延迟高
+ * - 带有迟滞 (Hysteresis) 处理，防止在音符边界颤动
  *
  * @module PitchCorrector
- * @version 0.4.0
+ * @version 0.4.1
  */
 
 /**
@@ -56,13 +53,15 @@ export class PitchCorrector {
   /**
    * 构造函数
    * @param {Object} options - 配置选项
-   * @param {number} [options.correctionAmount=0.5] - 修正强度 (0-1)
+   * @param {number} [options.retuneSpeed=0] - 修正速度 (0-1, 0=Fast, 1=Slow)
    * @param {string} [options.scale='CHROMATIC'] - 音阶类型
    * @param {string} [options.key='C'] - 调号 (C, C#, D, ...)
    * @param {number} [options.referenceFreq=440] - 参考音高 A4 (Hz)
    */
   constructor(options = {}) {
-    this.correctionAmount = options.correctionAmount !== undefined ? options.correctionAmount : 0.5;
+    // 修正速度 (Retune Speed): 0 = Robot (0ms), 1 = Natural (~200ms)
+    this.retuneSpeed = options.retuneSpeed !== undefined ? options.retuneSpeed : 0.0;
+    
     this.scale = options.scale || 'CHROMATIC';
     this.key = options.key || 'C';
     this.referenceFreq = options.referenceFreq || 440; // A4 = 440Hz
@@ -77,6 +76,14 @@ export class PitchCorrector {
     // 获取音阶定义
     this.scaleNotes = SCALES[this.scale]?.notes || SCALES.CHROMATIC.notes;
 
+    // 状态变量
+    this.currentOutputFreq = 0; // 当前输出频率 (用于平滑)
+    this.lastTime = 0;          // 上次处理的时间戳
+    this.currentMidiNote = -1;  // 当前锁定的MIDI音符 (用于迟滞)
+    
+    // 迟滞阈值 (半音) - 必须偏离当前音符这么多才能切换到新音符
+    this.hysteresisThreshold = 0.6; 
+
     // 统计信息
     this.stats = {
       processedCount: 0,
@@ -86,53 +93,99 @@ export class PitchCorrector {
     };
 
     console.log('[PitchCorrector] 初始化完成');
-    console.log(`  修正强度: ${(this.correctionAmount * 100).toFixed(0)}%`);
+    console.log(`  Retune Speed: ${(this.retuneSpeed * 100).toFixed(0)}%`);
     console.log(`  音阶: ${SCALES[this.scale]?.name || this.scale}`);
     console.log(`  调号: ${this.key}`);
-    console.log(`  参考音高: A4 = ${this.referenceFreq}Hz`);
   }
 
   /**
    * 修正音高
    * @param {number} inputFreq - 输入频率 (Hz)
    * @param {number} [confidence=1.0] - 检测置信度 (0-1)
+   * @param {number} [timestamp] - 当前时间戳 (ms)，可选，默认 Date.now()
    * @returns {Object} 修正后的结果
-   * @returns {number} result.frequency - 修正后的频率 (Hz)
-   * @returns {string} result.note - 目标音符
-   * @returns {number} result.octave - 八度
-   * @returns {number} result.cents - 原始频率偏离目标的音分数
-   * @returns {number} result.targetFrequency - 目标频率 (Hz)
    */
-  correct(inputFreq, confidence = 1.0) {
+  correct(inputFreq, confidence = 1.0, timestamp = Date.now()) {
     this.stats.processedCount++;
+    const dt = this.lastTime > 0 ? (timestamp - this.lastTime) : 16; // 默认16ms
+    this.lastTime = timestamp;
 
     // 输入验证
     if (!inputFreq || inputFreq <= 0) {
+      this.currentOutputFreq = 0;
+      this.currentMidiNote = -1;
       return this._createNullResult();
     }
 
-    // 低置信度时不修正
+    // 初始化
+    if (this.currentOutputFreq === 0) {
+      this.currentOutputFreq = inputFreq;
+    }
+
+    // 低置信度时不修正，但更新状态以避免跳变
     if (confidence < 0.3) {
+      this.currentOutputFreq = inputFreq;
       return this._createPassthroughResult(inputFreq);
     }
 
-    // 1. 将频率转换为MIDI音符号 (浮点数)
-    const midiNote = this._freqToMidi(inputFreq);
+    // 1. 频率 -> MIDI
+    const inputMidi = this._freqToMidi(inputFreq);
 
-    // 2. 找到最近的音阶内音符
-    const targetMidiNote = this._snapToScale(midiNote);
+    // 2. 找到目标音符 (带迟滞)
+    // 如果当前已经锁定了一个音符，且输入音符还在该音符的迟滞范围内，则保持锁定
+    let targetMidiNote = -1;
+    
+    if (this.currentMidiNote !== -1) {
+        const dist = Math.abs(inputMidi - this.currentMidiNote);
+        if (dist < this.hysteresisThreshold) {
+            // 保持当前音符，即使它可能不是绝对最近的
+            // 检查当前音符是否在当前音阶内 (以防音阶切换)
+            if (this._isNoteInScale(this.currentMidiNote)) {
+                targetMidiNote = this.currentMidiNote;
+            }
+        }
+    }
 
-    // 3. 将目标MIDI音符转换回频率
+    // 如果没有锁定或超出了迟滞范围，寻找最近的音阶内音符
+    if (targetMidiNote === -1) {
+        targetMidiNote = this._snapToScale(inputMidi);
+        this.currentMidiNote = targetMidiNote;
+    }
+
+    // 3. 目标频率
     const targetFreq = this._midiToFreq(targetMidiNote);
 
-    // 4. 计算偏移量(音分)
-    const cents = (midiNote - targetMidiNote) * 100;
+    // 4. 计算 Smoothing Factor (Alpha)
+    // Retune Speed 0 -> Tau = 0ms (Fast)
+    // Retune Speed 1 -> Tau = 200ms (Slow)
+    // Alpha = 1 - exp(-dt / tau)
+    // 当 tau -> 0, alpha -> 1
+    
+    let alpha = 1.0;
+    
+    // 映射 retuneSpeed (0-1) 到 tau (ms)
+    // 使用指数映射让调整更自然
+    const maxTau = 200; // 最大平滑时间 200ms
+    const tau = Math.pow(this.retuneSpeed, 2) * maxTau;
+    
+    if (tau > 1) { // 避免除以0
+       alpha = 1.0 - Math.exp(-dt / tau);
+    }
 
-    // 5. 应用修正强度 (线性插值)
-    const correctedFreq = this._lerp(inputFreq, targetFreq, this.correctionAmount);
+    // 5. 应用平滑 (Time-based Smoothing)
+    this.currentOutputFreq += (targetFreq - this.currentOutputFreq) * alpha;
 
-    // 6. 获取音符信息
+    // 6. 计算最终结果数据
+    const finalFreq = this.currentOutputFreq;
+    const finalMidi = this._freqToMidi(finalFreq); // 输出的实际 MIDI 值
+    
+    // 计算相对于目标音符的偏差 (用于显示)
+    const cents = (finalMidi - targetMidiNote) * 100;
+    const inputCents = (inputMidi - targetMidiNote) * 100;
+    
+    // 获取目标音符名称
     const noteInfo = this._midiToNote(targetMidiNote);
+    const inputNoteInfo = this._midiToNote(Math.round(inputMidi)); // 原始输入的最近音符
 
     // 更新统计
     this.stats.correctedCount++;
@@ -140,28 +193,34 @@ export class PitchCorrector {
     this.stats.avgCentsError = this.stats.totalCentsError / this.stats.correctedCount;
 
     return {
-      frequency: correctedFreq,
+      frequency: finalFreq,
+      
+      // 目标音符信息
       note: noteInfo.note,
       octave: noteInfo.octave,
-      cents: cents,
       targetFrequency: targetFreq,
-      correctionApplied: this.correctionAmount > 0
+      
+      // 原始输入音符信息 (用于 UI 显示 "C# -> D")
+      inputNote: inputNoteInfo.note,
+      inputOctave: inputNoteInfo.octave,
+      inputCents: inputCents,
+
+      cents: cents,
+      correctionApplied: true
     };
   }
 
   /**
-   * 设置修正强度
-   * @param {number} amount - 修正强度 (0-1)
+   * 设置 Retune Speed
+   * @param {number} speed - 0 (Fast/Robot) to 1 (Slow/Natural)
    */
-  setCorrectionAmount(amount) {
-    this.correctionAmount = Math.max(0, Math.min(1, amount));
-    console.log(`[PitchCorrector] 修正强度更新: ${(this.correctionAmount * 100).toFixed(0)}%`);
+  setRetuneSpeed(speed) {
+    this.retuneSpeed = Math.max(0, Math.min(1, speed));
+    console.log(`[PitchCorrector] Retune Speed 更新: ${(this.retuneSpeed * 100).toFixed(0)}%`);
   }
 
   /**
    * 设置音阶和调号
-   * @param {string} scale - 音阶类型 (CHROMATIC, MAJOR, MINOR, etc.)
-   * @param {string} key - 调号 (C, C#, D, ...)
    */
   setScale(scale, key) {
     if (!SCALES[scale]) {
@@ -173,138 +232,84 @@ export class PitchCorrector {
     this.key = key || this.key;
     this.scaleNotes = SCALES[scale].notes;
     this.keyOffset = NOTE_NAMES.indexOf(this.key);
+    
+    // 切换音阶时重置锁定，防止卡在错误的音符上
+    this.currentMidiNote = -1;
 
     console.log(`[PitchCorrector] 音阶更新: ${SCALES[scale].name}, 调号: ${this.key}`);
   }
 
-  /**
-   * 获取统计信息
-   * @returns {Object} 统计数据
-   */
-  getStats() {
-    return { ...this.stats };
-  }
-
-  /**
-   * 重置统计
-   */
+  getStats() { return { ...this.stats }; }
   resetStats() {
-    this.stats = {
-      processedCount: 0,
-      correctedCount: 0,
-      avgCentsError: 0,
-      totalCentsError: 0
-    };
+    this.stats = { processedCount: 0, correctedCount: 0, avgCentsError: 0, totalCentsError: 0 };
   }
 
   // ============================================================================
   // 私有方法
   // ============================================================================
 
-  /**
-   * 频率转MIDI音符号
-   * @private
-   * @param {number} freq - 频率 (Hz)
-   * @returns {number} MIDI音符号 (浮点数)
-   */
-  _freqToMidi(freq) {
-    return 69 + 12 * Math.log2(freq / this.referenceFreq);
-  }
+  _freqToMidi(freq) { return 69 + 12 * Math.log2(freq / this.referenceFreq); }
+  _midiToFreq(midi) { return this.referenceFreq * Math.pow(2, (midi - 69) / 12); }
 
   /**
-   * MIDI音符号转频率
-   * @private
-   * @param {number} midi - MIDI音符号
-   * @returns {number} 频率 (Hz)
+   * 检查音符是否在当前音阶内
    */
-  _midiToFreq(midi) {
-    return this.referenceFreq * Math.pow(2, (midi - 69) / 12);
+  _isNoteInScale(midiNote) {
+      const noteIndex = Math.round(midiNote) % 12;
+      // 将 noteIndex 转换到 Key 的相对位置
+      // scaleNotes 是相对 Key 的 (例如 C 大调 [0, 2, 4...])
+      // adjustedIndex = (noteIndex - keyOffset)
+      let adjustedIndex = (noteIndex - this.keyOffset) % 12;
+      if (adjustedIndex < 0) adjustedIndex += 12;
+      
+      return this.scaleNotes.includes(adjustedIndex);
   }
 
-  /**
-   * 吸附到最近的音阶内音符
-   * @private
-   * @param {number} midiNote - 输入MIDI音符号 (浮点数)
-   * @returns {number} 最近的音阶内MIDI音符号 (整数)
-   */
   _snapToScale(midiNote) {
-    // 1. 四舍五入到最近的半音
     const roundedMidi = Math.round(midiNote);
-
-    // 2. 分解为八度和音符
     const octave = Math.floor(roundedMidi / 12);
     const noteInOctave = roundedMidi % 12;
-
-    // 3. 应用调号偏移
     const adjustedNote = (noteInOctave - this.keyOffset + 12) % 12;
 
-    // 4. 找到音阶内最近的音符
     let closestNote = this.scaleNotes[0];
     let minDistance = Math.abs(adjustedNote - closestNote);
 
+    // 处理循环边界 (例如 11 到 0 的距离是 1)
+    // 简单的线性搜索通常足够，因为音阶只有 12 个音
     for (const scaleNote of this.scaleNotes) {
-      const distance = Math.abs(adjustedNote - scaleNote);
+      let distance = Math.abs(adjustedNote - scaleNote);
+      // 处理跨越八度的距离 (如 11 和 0 距离为 1)
+      if (distance > 6) distance = 12 - distance; 
+      
       if (distance < minDistance) {
         minDistance = distance;
         closestNote = scaleNote;
       }
     }
 
-    // 5. 转换回绝对MIDI音符号
     const finalNote = (closestNote + this.keyOffset) % 12;
     return octave * 12 + finalNote;
   }
 
-  /**
-   * MIDI音符号转音符信息
-   * @private
-   * @param {number} midi - MIDI音符号 (整数)
-   * @returns {Object} {note, octave}
-   */
   _midiToNote(midi) {
     const octave = Math.floor(midi / 12) - 1;
     const note = NOTE_NAMES[midi % 12];
     return { note, octave };
   }
 
-  /**
-   * 线性插值
-   * @private
-   */
-  _lerp(a, b, t) {
-    return a + (b - a) * t;
-  }
-
-  /**
-   * 创建空结果
-   * @private
-   */
   _createNullResult() {
     return {
-      frequency: 0,
-      note: '',
-      octave: 0,
-      cents: 0,
-      targetFrequency: 0,
-      correctionApplied: false
+      frequency: 0, note: '', octave: 0, cents: 0, targetFrequency: 0,
+      inputNote: '', inputOctave: 0, correctionApplied: false
     };
   }
 
-  /**
-   * 创建直通结果 (不修正)
-   * @private
-   */
   _createPassthroughResult(freq) {
     const midiNote = this._freqToMidi(freq);
     const noteInfo = this._midiToNote(Math.round(midiNote));
-
     return {
-      frequency: freq,
-      note: noteInfo.note,
-      octave: noteInfo.octave,
-      cents: 0,
-      targetFrequency: freq,
-      correctionApplied: false
+      frequency: freq, note: noteInfo.note, octave: noteInfo.octave, cents: 0, targetFrequency: freq,
+      inputNote: noteInfo.note, inputOctave: noteInfo.octave, correctionApplied: false
     };
   }
 }

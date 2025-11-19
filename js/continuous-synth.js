@@ -302,9 +302,13 @@ class ContinuousSynthEngine {
 
         // Apply Pitch Correction (Auto-Tune) if enabled
         if (this.autotuneEnabled && frequency > 0) {
-            const corrected = this.pitchCorrector.correct(frequency, confidence);
+            const now = Date.now();
+            const corrected = this.pitchCorrector.correct(frequency, confidence, now);
             frequency = corrected.frequency;
             cents = corrected.cents; // 使用修正后的cents值
+            this.lastCorrectionInfo = corrected; // Store for UI
+        } else {
+            this.lastCorrectionInfo = null;
         }
 
         const now = Date.now();
@@ -697,18 +701,16 @@ class ContinuousSynthEngine {
     }
 
     /**
-     * 启用/禁用 Auto-Tune
+     * 设置 Auto-Tune (Pitch Correction)
      * @param {boolean} enabled - 是否启用
-     * @param {number} [amount=0.5] - 修正强度 (0-1)
+     * @param {number} [speed=0.0] - Retune Speed (0=Robot, 1=Natural)
      */
-    setAutoTune(enabled, amount = 0.5) {
+    setAutoTune(enabled, speed = 0.0) {
         this.autotuneEnabled = enabled;
         if (enabled) {
-            this.pitchCorrector.setCorrectionAmount(amount);
-        } else {
-            this.pitchCorrector.setCorrectionAmount(0);
+            this.pitchCorrector.setRetuneSpeed(speed);
         }
-        console.log(`[ContinuousSynth] Auto-Tune: ${enabled ? 'ON' : 'OFF'} (${(amount * 100).toFixed(0)}%)`);
+        console.log(`[ContinuousSynth] Auto-Tune: ${enabled ? 'ON' : 'OFF'} (Speed: ${(speed * 100).toFixed(0)}%)`);
     }
 
     /**
@@ -727,6 +729,13 @@ class ContinuousSynthEngine {
      */
     getAutoTuneStats() {
         return this.pitchCorrector.getStats();
+    }
+
+    /**
+     * 获取最新的修正详情 (用于 UI 可视化)
+     */
+    getCorrectionInfo() {
+        return this.lastCorrectionInfo;
     }
 
     /**

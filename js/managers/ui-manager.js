@@ -171,6 +171,12 @@ export class UIManager {
     this.elements.warningBox = document.getElementById('warning-box');
     this.elements.warningText = document.getElementById('warning-text');
 
+    // Tuner Display
+    this.elements.tunerDisplay = document.getElementById('tunerDisplay');
+    this.elements.tunerInput = document.getElementById('tunerInput');
+    this.elements.tunerTarget = document.getElementById('tunerTarget');
+    this.elements.tunerCents = document.getElementById('tunerCents');
+
     // 验证关键元素
     const required = ['startBtn', 'stopBtn', 'recordingStatus'];
     for (const key of required) {
@@ -389,6 +395,42 @@ export class UIManager {
     }
 
     this.emit(UI_EVENTS.STATUS_CHANGE, { status, type });
+  }
+
+  /**
+   * 更新调音器显示 (Auto-Tune Visualizer)
+   * @param {Object} info - 修正信息 { inputNote, inputOctave, note, octave, cents }
+   */
+  updateTunerDisplay(info) {
+      if (!this.elements.tunerDisplay) return;
+
+      if (!info) {
+          this.elements.tunerDisplay.classList.add('hidden');
+          return;
+      }
+
+      this.elements.tunerDisplay.classList.remove('hidden');
+      
+      if (this.elements.tunerInput) {
+          this.elements.tunerInput.textContent = `${info.inputNote}${info.inputOctave}`;
+      }
+      
+      if (this.elements.tunerTarget) {
+          this.elements.tunerTarget.textContent = `${info.note}${info.octave}`;
+      }
+      
+      if (this.elements.tunerCents && info.inputCents !== undefined) {
+          const displayCents = info.inputCents;
+          const sign = displayCents >= 0 ? '+' : '';
+          this.elements.tunerCents.textContent = `(${sign}${displayCents.toFixed(0)}¢)`;
+          
+          // Color coding for cents
+          if (Math.abs(displayCents) < 10) {
+              this.elements.tunerCents.className = 'text-[10px] ml-2 text-green-500 font-bold';
+          } else {
+              this.elements.tunerCents.className = 'text-[10px] ml-2 text-gray-400';
+          }
+      }
   }
 
   /**

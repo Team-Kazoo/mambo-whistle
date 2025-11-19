@@ -327,13 +327,25 @@
                         </div>
 
                         <div id="autotuneControls" class="hidden space-y-3">
+                            <!-- Tuner Visualizer -->
+                            <div id="tunerDisplay" class="p-2 bg-black/5 rounded-lg text-center font-mono text-xs transition-colors duration-200">
+                                <span id="tunerInput" class="text-gray-500">--</span>
+                                <span class="text-gray-300 mx-1">→</span>
+                                <span id="tunerTarget" class="font-bold text-blue-600">--</span>
+                                <span id="tunerCents" class="text-[10px] ml-2 text-gray-400"></span>
+                            </div>
+
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="text-[10px] text-apple-gray font-medium">Correction Strength</label>
-                                    <span id="correctionValue" class="text-[10px] font-mono font-semibold">50%</span>
+                                    <label class="text-[10px] text-apple-gray font-medium">Retune Speed</label>
+                                    <span id="correctionValue" class="text-[10px] font-mono font-semibold">0% (Robot)</span>
                                 </div>
-                                <input type="range" id="correctionSlider" min="0" max="100" value="50"
+                                <input type="range" id="correctionSlider" min="0" max="100" value="0"
                                        class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                <div class="flex justify-between text-[9px] text-gray-400 mt-1 px-1">
+                                    <span>Robot (Fast)</span>
+                                    <span>Natural (Slow)</span>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-2">

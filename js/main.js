@@ -90,7 +90,13 @@ class KazooApp {
             correctionSlider: document.getElementById('correctionSlider'),
             correctionValue: document.getElementById('correctionValue'),
             scaleSelect: document.getElementById('scaleSelect'),
-            keySelect: document.getElementById('keySelect')
+            keySelect: document.getElementById('keySelect'),
+            
+            // Tuner Display
+            tunerDisplay: document.getElementById('tunerDisplay'),
+            tunerInput: document.getElementById('tunerInput'),
+            tunerTarget: document.getElementById('tunerTarget'),
+            tunerCents: document.getElementById('tunerCents')
         };
 
         // 可视化设置
@@ -250,9 +256,16 @@ class KazooApp {
 
                 // 应用到合成器
                 if (this.currentEngine && this.currentEngine.setAutoTune) {
-                    const amount = parseFloat(this.ui.correctionSlider.value) / 100;
-                    this.currentEngine.setAutoTune(isEnabled, amount);
-                    console.log(`[Auto-Tune] ${isEnabled ? 'Enabled' : 'Disabled'} (${Math.round(amount * 100)}%)`);
+                    // Slider: 0 (Fast) -> 100 (Slow)
+                    // Backend expects: 0 (Fast) -> 1 (Slow)
+                    const speed = parseFloat(this.ui.correctionSlider.value) / 100;
+                    this.currentEngine.setAutoTune(isEnabled, speed);
+                    
+                    // Show tuner display if enabled
+                    if (this.ui.tunerDisplay) {
+                        if (isEnabled) this.ui.tunerDisplay.classList.remove('hidden');
+                        else this.ui.tunerDisplay.classList.add('hidden');
+                    }
                 }
             });
         }
@@ -260,11 +273,17 @@ class KazooApp {
         if (this.ui.correctionSlider) {
             this.ui.correctionSlider.addEventListener('input', (e) => {
                 const value = parseInt(e.target.value);
-                this.ui.correctionValue.textContent = `${value}%`;
+                // Update label text based on value
+                let labelText = `${value}%`;
+                if (value < 20) labelText += " (Robot)";
+                else if (value > 80) labelText += " (Natural)";
+                
+                this.ui.correctionValue.textContent = labelText;
 
                 // 应用到合成器
                 if (this.currentEngine && this.currentEngine.setAutoTune) {
                     const isEnabled = this.ui.autotuneToggle.classList.contains('bg-blue-600');
+                    // Slider: 0 (Fast) -> 100 (Slow)
                     this.currentEngine.setAutoTune(isEnabled, value / 100);
                 }
             });
@@ -800,6 +819,23 @@ class KazooApp {
     updateVisualizer(pitchInfo) {
         if (!this.visualizer || !this.ui.pitchCanvas) {
             return;
+        }
+        
+        // Update Auto-Tune Tuner Display
+        if (this.currentEngine && this.currentEngine.getCorrectionInfo) {
+             const info = this.currentEngine.getCorrectionInfo();
+             if (info && this.ui.tunerDisplay && !this.ui.tunerDisplay.classList.contains('hidden')) {
+                  if (this.ui.tunerInput) this.ui.tunerInput.textContent = `${info.inputNote}${info.inputOctave}`;
+                  if (this.ui.tunerTarget) this.ui.tunerTarget.textContent = `${info.note}${info.octave}`;
+                  if (this.ui.tunerCents && info.inputCents !== undefined) {
+                      const displayCents = info.inputCents;
+                      const sign = displayCents >= 0 ? '+' : '';
+                      this.ui.tunerCents.textContent = `(${sign}${displayCents.toFixed(0)}¢)`;
+                      this.ui.tunerCents.className = Math.abs(displayCents) < 10 
+                          ? 'text-[10px] ml-2 text-green-500 font-bold' 
+                          : 'text-[10px] ml-2 text-gray-400';
+                  }
+             }
         }
 
         this.visualizer.history.push({
