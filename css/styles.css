@@ -209,7 +209,7 @@ a:hover {
 .toggle-switch {
     position: relative;
     display: inline-block;
-    width: 48px;
+    width: 44px;
     height: 26px;
     cursor: pointer;
 }
@@ -239,6 +239,7 @@ a:hover {
     border-radius: 50%;
     transition: transform 0.3s var(--apple-ease), box-shadow 0.3s var(--apple-ease);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    will-change: transform;
 }
 
 .toggle-switch input:checked + .toggle-slider {
@@ -246,7 +247,7 @@ a:hover {
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(22px);
+    transform: translateX(18px); /* 44px (w) - 22px (circle) - 2px (left) - 2px (right margin) = 18px travel */
     box-shadow: 0 4px 10px rgba(94, 92, 230, 0.5);
 }
 

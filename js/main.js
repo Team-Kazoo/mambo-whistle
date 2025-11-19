@@ -13,6 +13,7 @@ import { checkBrowserSupport, calculateRMS } from './utils/audio-utils.js';
 import { AppContainer } from './core/app-container.js';
 import { ExpressiveFeatures } from './expressive-features.js';
 import instrumentPresetManager from './config/instrument-presets.js';
+import { ContinuousSynthEngine } from './continuous-synth.js'; // Fixed: Import class
 
 class KazooApp {
     /**
