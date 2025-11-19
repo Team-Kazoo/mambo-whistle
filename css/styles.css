@@ -212,6 +212,7 @@ a:hover {
     width: 44px;
     height: 26px;
     cursor: pointer;
+    flex-shrink: 0; /* Prevent squeezing in flex containers */
 }
 
 .toggle-switch input {
@@ -237,9 +238,8 @@ a:hover {
     bottom: 2px;
     background-color: #fff;
     border-radius: 50%;
-    transition: transform 0.3s var(--apple-ease), box-shadow 0.3s var(--apple-ease);
+    transition: left 0.3s var(--apple-ease), box-shadow 0.3s var(--apple-ease);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    will-change: transform;
 }
 
 .toggle-switch input:checked + .toggle-slider {
@@ -247,7 +247,7 @@ a:hover {
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(18px); /* 44px (w) - 22px (circle) - 2px (left) - 2px (right margin) = 18px travel */
+    left: calc(100% - 24px); /* Robust positioning: 100% - width(22) - margin(2) */
     box-shadow: 0 4px 10px rgba(94, 92, 230, 0.5);
 }
 
