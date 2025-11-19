@@ -14,6 +14,7 @@ import { AppContainer } from './core/app-container.js';
 import { ExpressiveFeatures } from './expressive-features.js';
 import instrumentPresetManager from './config/instrument-presets.js';
 import UIManager from './managers/ui-manager.js';
+import ContinuousSynthEngine from './continuous-synth.js';
 
 class KazooApp {
     /**
