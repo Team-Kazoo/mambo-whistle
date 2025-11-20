@@ -132,6 +132,9 @@ class KazooApp {
         // Device State
         this.selectedInputId = 'default';
         this.selectedOutputId = 'default';
+        this.lastKnownInputLabel = 'System Default';
+        this.lastKnownOutputLabel = 'System Default';
+        this._loadDevicePreferences();
         this.selectedInstrument = 'flute'; // Track user selection before start
     }
 
@@ -187,6 +190,14 @@ class KazooApp {
         // Populate device list (initial attempt)
         // Note: Without permission, labels might be empty or list incomplete
         this._refreshDeviceList();
+
+        if (navigator.mediaDevices?.addEventListener && !this._deviceChangeListener) {
+            this._deviceChangeListener = () => {
+                console.log('[Main] Media device change detected, refreshing list...');
+                this._refreshDeviceList();
+            };
+            navigator.mediaDevices.addEventListener('devicechange', this._deviceChangeListener);
+        }
 
         // Initialize Auto-Tune UI State
         if (this.ui.autoTuneToggle) {
@@ -251,7 +262,11 @@ class KazooApp {
         if (this.ui.audioInputSelect) {
             this.ui.audioInputSelect.addEventListener('change', async (e) => {
                 this.selectedInputId = e.target.value;
+                const selectedLabel = e.target.selectedOptions[0]?.textContent || 'Custom Microphone';
                 console.log(`[Main] Input device selected: ${this.selectedInputId}`);
+                this.lastKnownInputLabel = selectedLabel;
+                this._persistDevicePreference('input', this.selectedInputId, selectedLabel);
+                this._updateDeviceHelperText();
                 
                 // If running, restart to apply new microphone
                 if (this.isRunning && this.audioIO) {
@@ -278,7 +293,11 @@ class KazooApp {
         if (this.ui.audioOutputSelect) {
             this.ui.audioOutputSelect.addEventListener('change', async (e) => {
                 this.selectedOutputId = e.target.value;
+                const selectedLabel = e.target.selectedOptions[0]?.textContent || 'Custom Output';
                 console.log(`[Main] Output device selected: ${this.selectedOutputId}`);
+                this.lastKnownOutputLabel = selectedLabel;
+                this._persistDevicePreference('output', this.selectedOutputId, selectedLabel);
+                this._updateDeviceHelperText();
                 
                 // If running, update immediately
                 if (this.audioIO) {
@@ -653,8 +672,7 @@ class KazooApp {
             
             // Populate Inputs
             if (this.ui.audioInputSelect) {
-                const currentVal = this.ui.audioInputSelect.value;
-                // Clear
+                const desiredVal = this.selectedInputId || this.ui.audioInputSelect.value || 'default';
                 this.ui.audioInputSelect.innerHTML = '';
                 
                 // Add Default
@@ -671,14 +689,21 @@ class KazooApp {
                 });
 
                 // Restore selection if possible
-                if (currentVal && [...this.ui.audioInputSelect.options].some(o => o.value === currentVal)) {
-                    this.ui.audioInputSelect.value = currentVal;
+                if (desiredVal && [...this.ui.audioInputSelect.options].some(o => o.value === desiredVal)) {
+                    this.ui.audioInputSelect.value = desiredVal;
+                } else if (desiredVal && desiredVal !== 'default') {
+                    const ghostOption = document.createElement('option');
+                    ghostOption.value = desiredVal;
+                    ghostOption.textContent = `${this.lastKnownInputLabel || 'Previous Mic'} (disconnected)`;
+                    ghostOption.disabled = true;
+                    this.ui.audioInputSelect.appendChild(ghostOption);
+                    this.ui.audioInputSelect.value = desiredVal;
                 }
             }
 
             // Populate Outputs
             if (this.ui.audioOutputSelect) {
-                const currentVal = this.ui.audioOutputSelect.value;
+                const desiredVal = this.selectedOutputId || this.ui.audioOutputSelect.value || 'default';
                 this.ui.audioOutputSelect.innerHTML = '';
                 
                 const defaultOpt = document.createElement('option');
@@ -694,8 +719,15 @@ class KazooApp {
                 });
 
                 // Restore selection if possible
-                if (currentVal && [...this.ui.audioOutputSelect.options].some(o => o.value === currentVal)) {
-                    this.ui.audioOutputSelect.value = currentVal;
+                if (desiredVal && [...this.ui.audioOutputSelect.options].some(o => o.value === desiredVal)) {
+                    this.ui.audioOutputSelect.value = desiredVal;
+                } else if (desiredVal && desiredVal !== 'default') {
+                    const ghostOption = document.createElement('option');
+                    ghostOption.value = desiredVal;
+                    ghostOption.textContent = `${this.lastKnownOutputLabel || 'Previous Output'} (disconnected)`;
+                    ghostOption.disabled = true;
+                    this.ui.audioOutputSelect.appendChild(ghostOption);
+                    this.ui.audioOutputSelect.value = desiredVal;
                 }
             }
 
@@ -707,10 +739,94 @@ class KazooApp {
                     setTimeout(() => icon.classList.remove('animate-spin'), 500);
                 }
             }
+            this._updateDeviceHelperText();
 
         } catch (error) {
             console.error('[Main] Failed to refresh devices:', error);
         }
+    }
+
+    _captureActiveDeviceState() {
+        const inputTrack = this.audioIO?.stream?.getAudioTracks?.()[0];
+        if (inputTrack) {
+            const settings = inputTrack.getSettings ? inputTrack.getSettings() : {};
+            let appliedId = settings.deviceId;
+            const label = inputTrack.label || this.lastKnownInputLabel;
+            if (!appliedId && label) {
+                appliedId = this._findDeviceIdByLabel(this.ui.audioInputSelect, label);
+            }
+            if (appliedId) {
+                this.selectedInputId = appliedId;
+                this._persistDevicePreference('input', appliedId, label);
+                this._syncSelectValue(this.ui.audioInputSelect, appliedId, label);
+            }
+            if (label) {
+                this.lastKnownInputLabel = label;
+            }
+        }
+
+        if (this.ui.audioOutputSelect) {
+            const selectedOption = this.ui.audioOutputSelect.selectedOptions[0];
+            if (selectedOption) {
+                this.lastKnownOutputLabel = selectedOption.textContent;
+                this._persistDevicePreference('output', this.selectedOutputId || 'default', selectedOption.textContent);
+            }
+        }
+
+        this._updateDeviceHelperText();
+    }
+
+    _loadDevicePreferences() {
+        try {
+            const savedInput = localStorage.getItem('kazoo:lastInputDeviceId');
+            const savedOutput = localStorage.getItem('kazoo:lastOutputDeviceId');
+            const savedInputLabel = localStorage.getItem('kazoo:lastInputDeviceLabel');
+            const savedOutputLabel = localStorage.getItem('kazoo:lastOutputDeviceLabel');
+            if (savedInput) this.selectedInputId = savedInput;
+            if (savedOutput) this.selectedOutputId = savedOutput;
+            if (savedInputLabel) this.lastKnownInputLabel = savedInputLabel;
+            if (savedOutputLabel) this.lastKnownOutputLabel = savedOutputLabel;
+        } catch (err) {
+            console.warn('[Main] Unable to load saved device preferences:', err);
+        }
+    }
+
+    _persistDevicePreference(type, deviceId, label) {
+        try {
+            const idKey = type === 'input' ? 'kazoo:lastInputDeviceId' : 'kazoo:lastOutputDeviceId';
+            const labelKey = type === 'input' ? 'kazoo:lastInputDeviceLabel' : 'kazoo:lastOutputDeviceLabel';
+            localStorage.setItem(idKey, deviceId || 'default');
+            if (label) {
+                localStorage.setItem(labelKey, label);
+            }
+        } catch (err) {
+            console.warn('[Main] Unable to persist device preference:', err);
+        }
+    }
+
+    _syncSelectValue(selectEl, deviceId, fallbackLabel) {
+        if (!selectEl || !deviceId) return;
+        const options = [...selectEl.options];
+        if (!options.some(o => o.value === deviceId)) {
+            const option = document.createElement('option');
+            option.value = deviceId;
+            option.textContent = fallbackLabel || 'Active Device';
+            selectEl.appendChild(option);
+        }
+        selectEl.value = deviceId;
+    }
+
+    _findDeviceIdByLabel(selectEl, label) {
+        if (!selectEl || !label) return null;
+        const option = [...selectEl.options].find(o => o.textContent === label);
+        return option ? option.value : null;
+    }
+
+    _updateDeviceHelperText() {
+        if (!this.ui.recordingHelper) return;
+        const mic = this.lastKnownInputLabel || 'System Default';
+        const out = this.lastKnownOutputLabel || 'System Default';
+        this.ui.recordingHelper.textContent = `Mic · ${mic}  |  Output · ${out}`;
     }
 
     /**
@@ -777,7 +893,8 @@ class KazooApp {
             });
 
             //  启动音频系统（仅 AudioIO）
-            await this._startWithAudioIO();
+            const audioStartInfo = await this._startWithAudioIO();
+            this._captureActiveDeviceState();
 
             // 更新UI
             this.isRunning = true;
@@ -919,6 +1036,8 @@ class KazooApp {
         // 4. 更新性能监控 (Step 2: 使用注入的服务)
         if (!this.performanceMonitor.metrics.sampleRate) {
             await this.performanceMonitor.initialize(ctx, bufferSize, result.mode);
+
+        return result;
         }
     }
 

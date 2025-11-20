@@ -138,13 +138,13 @@
 
         /* Google Font Helper */
         .font-google {
-            font-family: 'Roboto Flex', 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Google Sans Flex', 'Roboto Flex', 'Google Sans', 'Product Sans', -apple-system, BlinkMacSystemFont, sans-serif;
         }
     </style>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="bg-gradient-to-br from-[#F5F5F7] to-[#E8E8EA] text-[#1D1D1F] min-h-screen relative">
@@ -397,8 +397,8 @@
                 </h1>
 
                 <p class="text-xl text-apple-gray max-w-2xl mx-auto font-normal leading-relaxed">
-                    Real-time pitch tracking meets AI harmonization. <br class="hidden md:inline">
-                    Zero-latency synthesis. Pure creative expression.
+                    Step into a glassy, weightless soundscape where your breath spills into color before you even think about it. <br class="hidden md:inline">
+                    It feels immediate, intimate, and alive.
                 </p>
             </section>
 
@@ -820,7 +820,7 @@
                 </div>
             </div>
 
-            <!-- NEW PROMO SECTION (Google Antigravity Style) -->
+            <!-- NEW PROMO SECTION (Hardware Teaser) -->
             <section class="relative py-32 mt-12 overflow-hidden rounded-[40px] bg-white border border-gray-100 shadow-2xl text-center group font-google">
                 <!-- Confetti Background -->
                 <div class="absolute inset-0 pointer-events-none overflow-hidden" id="confetti-bg">
@@ -833,35 +833,37 @@
 
                 <div class="relative z-10 max-w-4xl mx-auto px-6">
                     <!-- Small Logo -->
-                    <div class="flex items-center justify-center gap-2 mb-8">
-                        <div class="w-6 h-6 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-[10px] text-white font-bold">K</div>
-                        <span class="font-medium text-lg text-gray-600 tracking-tight">Kazoo Proto Pro</span>
+                    <div class="flex items-center justify-center gap-3 mb-8 uppercase tracking-[0.2em] text-[12px] text-gray-500 font-semibold">
+                        <div class="w-8 h-8 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center text-[13px] text-white font-bold shadow-lg">K</div>
+                        Hardware Lab Edition
                     </div>
 
                     <!-- Headline -->
-                    <h2 class="text-5xl md:text-8xl font-bold tracking-tighter text-[#1D1D1F] mb-4 leading-[0.95]">
-                        Experience liftoff
+                    <h2 class="text-5xl md:text-8xl font-semibold tracking-tight text-[#1D1D1F] mb-6 leading-[0.95]">
+                        Hold a stage <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500">in your hands</span>
                     </h2>
-                    <p class="text-4xl md:text-7xl font-medium tracking-tighter text-[#86868b] mb-12 leading-[1.1]">
-                        with the next-generation IDE
+                    <p class="text-2xl md:text-3xl font-medium tracking-tight text-[#86868b] mb-12 leading-[1.2]">
+                        We’re building a dedicated hardware rig: custom mic preamps, tactile controls, and our neural synth brain baked right in. No laptop. No setup. Just a pocket-sized creative nebula.
                     </p>
 
                     <!-- Buttons -->
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-base md:text-lg">
                         <!-- Primary Button (Dark) -->
-                        <button class="flex items-center gap-3 bg-[#1D1D1F] text-white px-8 py-4 rounded-full font-medium text-lg hover:bg-black hover:scale-105 transition-all duration-300 shadow-lg">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.21-1.96 1.07-3.11-1.05.05-2.31.71-3.06 1.61-.69.87-1.23 2.02-1.01 3.15 1.2.09 2.32-.71 3-1.65"/></svg>
-                            Download for MacOS
+                        <button class="flex items-center gap-3 bg-[#1D1D1F] text-white px-9 py-4 rounded-full font-semibold tracking-wide hover:bg-black hover:scale-[1.03] transition-all duration-300 shadow-xl uppercase text-[13px]">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="M12 3v12m0 0l-4-4m4 4l4-4M4 15h16m-9 6h2"/></svg>
+                            Join Hardware Pilot
                         </button>
 
                         <!-- Secondary Button (Light) -->
-                        <button class="flex items-center gap-3 bg-white text-[#1D1D1F] border border-gray-200 px-8 py-4 rounded-full font-medium text-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
-                            Explore use cases
+                        <button class="flex items-center gap-3 bg-white text-[#1D1D1F] border border-gray-200 px-9 py-4 rounded-full font-semibold tracking-wide hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 uppercase text-[13px]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="M15 10l4.553-1.519A1 1 0 0121 9.451V17a4 4 0 01-4 4H7a4 4 0 01-4-4v-7.55a1 1 0 011.447-.932L9 10m6 0l-3 1m3-1V6a3 3 0 00-6 0v4m0 0l3 1"/></svg>
+                            See the Rig
                         </button>
                     </div>
                     
-                    <div class="mt-16 text-sm text-gray-400 font-medium">
-                        © 2025 Kazoo Proto. Runs locally in your browser.
+                    <div class="mt-16 text-sm text-gray-500 font-medium leading-relaxed">
+                        Hardware beta ships in limited drops. Plug it into any synth setup, or run standalone on battery. <br class="hidden sm:block">
+                        © 2025 Kazoo Proto. Crafted for stage, studio, and street corners.
                     </div>
                 </div>
             </section>
