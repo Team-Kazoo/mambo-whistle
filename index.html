@@ -18,8 +18,48 @@
             colors: {
               apple: { text: '#1D1D1F', gray: '#86868B', sub: '#6e6e73' }
             },
-            animation: {},
-            keyframes: {},
+            animation: {
+              'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'slide-up': 'slideUp 0.6s ease-out',
+              'slide-down': 'slideDown 0.6s ease-out',
+              'scale-in': 'scaleIn 0.3s ease-out',
+              'spin-slow': 'spin 3s linear infinite',
+              'blob': 'blob 20s infinite',
+              'shine': 'shine 2s infinite',
+            },
+            keyframes: {
+              pulse: {
+                '0%, 100%': { opacity: '1' },
+                '50%': { opacity: '0.7' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { transform: 'translateY(20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              slideDown: {
+                '0%': { transform: 'translateY(-20px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              },
+              scaleIn: {
+                '0%': { transform: 'scale(0.9)', opacity: '0' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+              },
+              blob: {
+                '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                '100%': { transform: 'translate(0px, 0px) scale(1)' }
+              },
+              shine: {
+                '0%': { transform: 'translateX(-100%)' },
+                '100%': { transform: 'translateX(100%)' }
+              }
+            },
             backgroundImage: {
               'google-gradient': 'linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853)',
             }
@@ -38,15 +78,19 @@
         
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
-        /* 玻璃拟态优化 - 减少重绘开销 */
+        /* 玻璃拟态优化 - 减少 blur 降低 GPU 负载 */
         .glass {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.80);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.6);
         }
-        
-        /* GPU加速已移除以降低GPU占用 */
+
+        /* 强制硬件加速，解决闪烁问题 */
+        .gpu-accelerated {
+            transform: translateZ(0);
+            will-change: transform;
+        }
 
         /* === Google 边框修复核心代码 === */
         .instrument-btn {
@@ -56,8 +100,9 @@
 
         .card-inner {
             position: relative;
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(6px);
+            transition: all 0.3s ease;
             z-index: 10;
             border: 1px solid rgba(255,255,255,0.5);
         }
@@ -68,34 +113,70 @@
             inset: -3px; /* 边框宽度 */
             border-radius: 26px; /* 比内部圆角大一点 */
             background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
+            background-size: 300% 300%;
             z-index: 0; /* 在卡片下面 */
             opacity: 0;
+            transition: opacity 0.3s ease;
+            animation: borderRotate 4s linear infinite;
         }
 
         /* 激活状态：显示边框，卡片变白 */
         .instrument-btn.active .card-border-gradient {
             opacity: 1;
         }
-        
+
         .instrument-btn.active .card-inner {
             background: #FFFFFF; /* 选中时卡片变实心白，对比度更高 */
             border-color: transparent;
+            transform: scale(0.98); /* 轻微按压感 */
         }
 
-        /* 开关样式 */
-        .toggle-switch { position: relative; width: 44px; height: 24px; display: inline-block; }
+        @keyframes borderRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Animation delay utilities */
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+
+        /* 开关样式 - Apple 标准尺寸 */
+        .toggle-switch {
+            position: relative;
+            width: 51px;   /* 标准 Apple toggle 宽度 */
+            height: 31px;  /* 标准 Apple toggle 高度 */
+            display: inline-block;
+        }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #e5e5e5; border-radius: 34px;
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #e5e5e7;
+            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 31px;
         }
         .toggle-slider:before {
-            position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px;
-            background-color: white; border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: absolute;
+            content: "";
+            height: 27px;   /* 31px - 4px padding = 27px */
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16);
         }
-        input:checked + .toggle-slider { background-color: #34A853; }
-        input:checked + .toggle-slider:before { left: 22px; }
+        input:checked + .toggle-slider { background-color: #34C759; }  /* iOS 绿色 */
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);  /* 51px - 4px(padding) - 27px(circle) = 20px */
+        }
 
         /* 表单交互 */
         .input-group:focus-within { box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2); border-color: #4285F4; }
@@ -105,16 +186,19 @@
 </head>
 <body class="bg-[#F5F5F7] text-[#1D1D1F] min-h-screen relative">
 
-    <!-- 背景：静态背景，无动画以降低GPU占用 -->
+    <!-- 背景：优化 blur 减少 GPU 负载 -->
     <div class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute inset-0 bg-white/40"></div>
+        <div class="absolute top-[-10%] left-[10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob gpu-accelerated"></div>
+        <div class="absolute top-[-10%] right-[10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob animation-delay-2000 gpu-accelerated"></div>
+        <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob animation-delay-4000 gpu-accelerated"></div>
+        <div class="absolute inset-0 bg-white/50"></div>
     </div>
 
     <!-- 导航栏 -->
-    <nav class="fixed top-0 inset-x-0 z-50 glass border-b-0">
+    <nav class="fixed top-0 inset-x-0 z-50 glass border-b-0 transition-all duration-300">
         <div class="max-w-6xl mx-auto px-6 h-[64px] flex items-center justify-between">
             <a href="#" class="flex items-center gap-3 group no-underline">
-                <div class="w-9 h-9 bg-black rounded-xl flex items-center justify-center text-lg shadow-lg text-white">
+                <div class="w-9 h-9 bg-black rounded-xl flex items-center justify-center text-lg shadow-lg text-white group-hover:scale-105 transition-transform">
                     🎧
                 </div>
                 <div>
@@ -124,24 +208,56 @@
             </a>
 
             <div class="hidden md:flex items-center gap-8 text-[13px] font-medium text-apple-sub">
-                <a href="#instrumentSection" class="hover:text-[#1D1D1F]">Instruments</a>
-                <a href="#visualizer" class="hover:text-[#1D1D1F]">Visualizer</a>
-                <a href="#tipsSection" class="hover:text-[#1D1D1F]">Tips</a>
+                <a href="#instrumentSection" class="hover:text-[#1D1D1F] transition-colors">Instruments</a>
+                <a href="#visualizer" class="hover:text-[#1D1D1F] transition-colors">Visualizer</a>
+                <a href="#tipsSection" class="hover:text-[#1D1D1F] transition-colors">Tips</a>
             </div>
 
-            <div class="flex items-center gap-4">
-                <!-- Mode Toggle -->
-                <div class="flex items-center gap-3 bg-white/50 px-4 py-2 rounded-full border border-white/60 shadow-sm">
-                    <span class="text-[11px] font-bold text-apple-gray uppercase tracking-wider">Mode</span>
-                    <label class="toggle-switch scale-[0.8]">
-                        <input type="checkbox" id="modeToggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span id="modeText" class="text-[12px] font-semibold min-w-[70px] text-center">Continuous</span>
+            <div class="flex items-center gap-3">
+                <!-- Smart Jam Button (Apple Style) -->
+                <div class="relative group/tooltip">
+                    <button id="aiJamBtn" class="group relative flex items-center gap-2.5 bg-white/85 hover:bg-white active:bg-gray-50 backdrop-blur-sm border border-black/5 shadow-sm pr-4 pl-3 py-1.5 rounded-full transition-all duration-300 overflow-hidden" style="min-width: 120px;">
+                        
+                        <!-- Loading Progress Bar (Absolute Background) -->
+                        <div id="aiProgressBar" class="absolute left-0 top-0 bottom-0 bg-blue-500/10 w-0 transition-all duration-300 ease-out"></div>
+
+                        <!-- Icon Container -->
+                        <div class="relative z-10 flex items-center justify-center w-5 h-5">
+                            <!-- Idle Icon: Sparkles -->
+                            <svg id="aiIconIdle" class="w-4.5 h-4.5 text-blue-500 transition-transform duration-300 group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                            </svg>
+                            
+                            <!-- Loading Icon: Spinner -->
+                            <svg id="aiIconLoading" class="hidden w-4.5 h-4.5 animate-spin text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            
+                            <!-- Active Icon: Audio Wave -->
+                            <svg id="aiIconActive" class="hidden w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                            </svg>
+                        </div>
+
+                        <!-- Text Container -->
+                        <div class="relative z-10 flex flex-col items-start text-left">
+                            <span id="aiJamTitle" class="text-[11px] font-semibold text-gray-900 leading-tight transition-colors duration-300">Smart Jam</span>
+                            <span id="aiJamStatus" class="text-[9px] font-medium text-gray-500 leading-none mt-0.5 transition-colors duration-300">Off</span>
+                        </div>
+                    </button>
+
+                    <!-- Tooltip -->
+                    <div class="absolute top-full right-0 mt-3 w-64 p-3 bg-white/95 backdrop-blur-sm rounded-2xl border border-black/5 shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-[60] transform translate-y-2 group-hover/tooltip:translate-y-0">
+                        <div class="text-[11px] text-gray-500 leading-relaxed">
+                            <span class="font-semibold text-gray-900 block mb-1">AI Accompaniment</span>
+                            Play a melody, and our neural network will generate a matching backing track in real-time.
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Settings Button -->
-                <button id="settingsBtn" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors">
+                <button id="settingsBtn" class="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200 hover:bg-gray-50 transition-all hover:scale-105 active:scale-95">
                     <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 </button>
             </div>
@@ -151,16 +267,45 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 z-[100] hidden">
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" id="settingsBackdrop"></div>
+        <div class="absolute inset-0 bg-black/30 transition-opacity" id="settingsBackdrop"></div>
         
-        <!-- Modal Content -->
-        <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl p-8 overflow-y-auto transform transition-transform translate-x-full duration-300 ease-out" id="settingsPanel">
-            <div class="flex items-center justify-between mb-8">
-                <h2 class="text-2xl font-display font-bold text-[#1D1D1F]">Settings</h2>
-                <button id="closeSettingsBtn" class="p-2 rounded-full hover:bg-gray-100 text-gray-500">
+        <!-- Modal Content - Wider Apple-style panel -->
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl p-10 overflow-y-auto transform transition-transform translate-x-full duration-300 ease-out" id="settingsPanel">
+            <div class="flex items-center justify-between mb-10">
+                <h2 class="text-3xl font-display font-bold text-[#1D1D1F]">Settings</h2>
+                <button id="closeSettingsBtn" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all active:scale-95">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
+
+            <!-- Section: Synthesis Mode -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-700 mb-1">Synthesis Mode</h3>
+                        <p class="text-xs text-gray-500">Choose between continuous pitch or discrete notes</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="modeToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div>
+                                <p id="modeText" class="text-sm font-semibold text-gray-900">Continuous Mode</p>
+                                <p class="text-xs text-gray-500">Smooth pitch transitions</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-gray-100 mb-8">
 
             <!-- Section: Audio I/O -->
             <div class="mb-8">
@@ -217,52 +362,77 @@
                     </label>
                 </div>
 
-                <div class="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-6 p-5 bg-gray-50 rounded-2xl border border-gray-100">
+                    <!-- Key & Scale Selectors (Custom Styled) -->
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Key</label>
-                            <select id="scaleKeySelect" class="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-xs font-medium">
-                                <option value="C">C</option>
-                                <option value="C#">C#</option>
-                                <option value="D">D</option>
-                                <option value="D#">D#</option>
-                                <option value="E">E</option>
-                                <option value="F">F</option>
-                                <option value="F#">F#</option>
-                                <option value="G">G</option>
-                                <option value="G#">G#</option>
-                                <option value="A">A</option>
-                                <option value="A#">A#</option>
-                                <option value="B">B</option>
-                            </select>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Key</label>
+                            <div class="relative">
+                                <select id="scaleKeySelect" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                    <option value="C">C</option>
+                                    <option value="C#">C#</option>
+                                    <option value="D">D</option>
+                                    <option value="D#">D#</option>
+                                    <option value="E">E</option>
+                                    <option value="F">F</option>
+                                    <option value="F#">F#</option>
+                                    <option value="G">G</option>
+                                    <option value="G#">G#</option>
+                                    <option value="A">A</option>
+                                    <option value="A#">A#</option>
+                                    <option value="B">B</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
                         </div>
                         <div>
-                            <label class="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Scale</label>
-                            <select id="scaleTypeSelect" class="w-full bg-white border border-gray-200 rounded-lg px-2 py-2 text-xs font-medium">
-                                <option value="chromatic">Chromatic</option>
-                                <option value="major">Major</option>
-                                <option value="minor">Minor</option>
-                                <option value="pentatonic_major">Major Pentatonic</option>
-                                <option value="pentatonic_minor">Minor Pentatonic</option>
-                                <option value="blues">Blues</option>
-                            </select>
+                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Scale</label>
+                            <div class="relative">
+                                <select id="scaleTypeSelect" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                    <option value="chromatic">Chromatic</option>
+                                    <option value="major">Major</option>
+                                    <option value="minor">Minor</option>
+                                    <option value="pentatonic_major">Major Pentatonic</option>
+                                    <option value="pentatonic_minor">Minor Pentatonic</option>
+                                    <option value="blues">Blues</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Correction Strength Segmented Control -->
                     <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase">Strength</label>
-                            <span id="strengthValue" class="text-[10px] font-mono text-blue-600">0%</span>
+                        <div class="flex justify-between items-baseline mb-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Correction Strength</label>
                         </div>
-                        <input type="range" id="strengthSlider" min="0" max="100" value="0" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                        <div class="flex p-1 bg-gray-200/80 rounded-xl mb-2" id="strengthControl">
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0">Off</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0.5">Soft</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="1.0">Hard</button>
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-tight">
+                            Controls how strongly the pitch is pulled to the nearest note. "Hard" gives that robotic T-Pain effect.
+                        </p>
                     </div>
 
+                    <!-- Retune Speed Segmented Control -->
                     <div>
-                        <div class="flex justify-between mb-1">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase">Speed</label>
-                            <span id="speedValue" class="text-[10px] font-mono text-blue-600">Fast</span>
+                        <div class="flex justify-between items-baseline mb-2">
+                            <label class="text-xs font-bold text-gray-500 uppercase">Retune Speed</label>
                         </div>
-                        <input type="range" id="speedSlider" min="0" max="100" value="0" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                        <div class="flex p-1 bg-gray-200/80 rounded-xl mb-2" id="speedControl">
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0.0">Robot</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0.4">Pop</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="1.0">Natural</button>
+                        </div>
+                        <p class="text-[11px] text-gray-400 leading-tight">
+                            Determines how fast the pitch snaps. "Robot" is instant (0ms), while "Natural" preserves slides (100ms).
+                        </p>
                     </div>
                 </div>
             </div>
@@ -299,6 +469,7 @@
             <section class="text-center mb-20 relative">
                 <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[11px] font-bold tracking-wide uppercase mb-6">
                     <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                     </span>
                     Web Audio API Native
@@ -324,72 +495,219 @@
                         <div id="instrumentStatus" class="text-[11px] font-bold text-white bg-black/80 px-3 py-1 rounded-full shadow-sm">Saxophone</div>
                     </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        <!-- Template for Instrument Buttons -->
-                        <!-- 重要：tabindex="0" 和 outline-none 修复蓝色框问题 -->
-                        
-                        <button class="instrument-btn active group relative w-full text-left focus:outline-none" data-instrument="saxophone">
-                            <div class="card-border-gradient"></div> <!-- 独立的背景层 -->
-                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
-                                <span class="text-4xl filter drop-shadow-md">🎷</span>
-                                <div>
-                                    <p class="font-semibold text-lg text-[#1D1D1F]">Saxophone</p>
-                                    <p class="text-[11px] text-apple-gray mt-1">Expressive Lead</p>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                        <!-- Flute -->
+                        <button class="instrument-btn active group relative w-full text-left focus:outline-none" data-instrument="flute">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/flute.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M4 12h16"/><circle cx="8" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><path d="M2 12l2-2v4l-2-2z"/><path d="M20 10v4"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Flute</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Pure & Airy</p>
+                                    </div>
                                 </div>
                             </div>
                         </button>
 
+                        <!-- Clarinet -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="clarinet">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/clarinet.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <rect x="10" y="2" width="4" height="3" rx="1"/><path d="M10 5h4v14c0 1.1-.9 2-2 2s-2-.9-2-2V5z"/><circle cx="10.5" cy="8" r="0.8" fill="currentColor"/><circle cx="13.5" cy="8" r="0.8" fill="currentColor"/><circle cx="10.5" cy="11" r="0.8" fill="currentColor"/><circle cx="13.5" cy="11" r="0.8" fill="currentColor"/><circle cx="10.5" cy="14" r="0.8" fill="currentColor"/><circle cx="13.5" cy="14" r="0.8" fill="currentColor"/><path d="M11 19l-2 2m4-2l2 2"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Clarinet</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Woody Hollow</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Dizi -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="dizi">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/dizi.png')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M3 12h18"/><circle cx="6" cy="12" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/><path d="M3 10v4M21 10v4"/><path d="M4 8h16"/><path d="M4 16h16"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Dizi</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Bamboo Buzz</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Soprano Sax -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="soprano_sax">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/soprano_sax.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M10 3h4v3h-4z"/><path d="M11 6v8c0 2-1 4-2 5l-1 2"/><path d="M13 6v8c0 2 1 4 2 5l1 2"/><circle cx="9" cy="10" r="0.8" fill="currentColor"/><circle cx="9" cy="13" r="0.8" fill="currentColor"/><circle cx="9" cy="16" r="0.8" fill="currentColor"/><circle cx="15" cy="10" r="0.8" fill="currentColor"/><circle cx="15" cy="13" r="0.8" fill="currentColor"/><circle cx="15" cy="16" r="0.8" fill="currentColor"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Soprano Sax</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Kenny G Style</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Alto Sax -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="alto_sax">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/alto_sax.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M10 2h4v3h-4z"/><path d="M11 5v6c0 3-2 5-3 6l-2 3"/><path d="M13 5v6c0 3 2 5 3 6l2 3"/><circle cx="8" cy="9" r="0.8" fill="currentColor"/><circle cx="8" cy="12" r="0.8" fill="currentColor"/><circle cx="8" cy="15" r="0.8" fill="currentColor"/><circle cx="16" cy="9" r="0.8" fill="currentColor"/><circle cx="16" cy="12" r="0.8" fill="currentColor"/><circle cx="16" cy="15" r="0.8" fill="currentColor"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Alto Sax</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Jazz Standard</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Trumpet -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="trumpet">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/trumpet.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M21 12h-6"/><path d="M15 10v4"/><rect x="9" y="10" width="6" height="4" rx="0.5"/><circle cx="6" cy="12" r="3"/><path d="M12 11v2"/><path d="M10 11v2"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/><circle cx="10" cy="12" r="0.5" fill="currentColor"/><circle cx="14" cy="12" r="0.5" fill="currentColor"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Trumpet</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Bright Lead</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Trombone -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="trombone">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/trombone.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M20 12h-4"/><rect x="12" y="10" width="4" height="4" rx="0.5"/><path d="M12 12H4"/><circle cx="2" cy="12" r="1.5"/><path d="M6 10v4"/><path d="M8 10v4"/><path d="M10 10v4"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Trombone</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Slide Master</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Suona -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="suona">
+                            <div class="card-border-gradient"></div>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/suona.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M12 2v8"/><circle cx="12" cy="10" r="2"/><path d="M12 12v6"/><path d="M12 18c0 2.2-1.8 4-4 4h8c-2.2 0-4-1.8-4-4z"/><circle cx="10" cy="14" r="0.6" fill="currentColor"/><circle cx="14" cy="14" r="0.6" fill="currentColor"/><circle cx="10" cy="16" r="0.6" fill="currentColor"/><circle cx="14" cy="16" r="0.6" fill="currentColor"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Suona</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">High Energy</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+
+                        <!-- Violin -->
                         <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="violin">
                             <div class="card-border-gradient"></div>
-                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
-                                <span class="text-4xl filter drop-shadow-md">🎻</span>
-                                <div>
-                                    <p class="font-semibold text-lg text-[#1D1D1F]">Violin</p>
-                                    <p class="text-[11px] text-apple-gray mt-1">Vibrato Ready</p>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/violin.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <ellipse cx="12" cy="16" rx="4" ry="5"/><path d="M12 11v-1a2 2 0 012-2h0a2 2 0 012-2V3"/><path d="M10 13l4 0"/><path d="M10 15l4 0"/><path d="M10 17l4 0"/><path d="M10 19l4 0"/><circle cx="12" cy="8" r="1"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Violin</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Solo Strings</p>
+                                    </div>
                                 </div>
                             </div>
                         </button>
 
-                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="piano">
+                        <!-- Cello -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="cello">
                             <div class="card-border-gradient"></div>
-                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
-                                <span class="text-4xl filter drop-shadow-md">🎹</span>
-                                <div>
-                                    <p class="font-semibold text-lg text-[#1D1D1F]">Piano</p>
-                                    <p class="text-[11px] text-apple-gray mt-1">Percussive</p>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/cello.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <ellipse cx="12" cy="14" rx="5" ry="7"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1"/><path d="M9 11h6"/><path d="M9 13h6"/><path d="M9 15h6"/><path d="M9 17h6"/><path d="M12 21v1"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Cello</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Deep Warmth</p>
+                                    </div>
                                 </div>
                             </div>
                         </button>
 
-                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="flute">
+                        <!-- Erhu -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="erhu">
                             <div class="card-border-gradient"></div>
-                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
-                                <span class="text-4xl filter drop-shadow-md">🎼</span>
-                                <div>
-                                    <p class="font-semibold text-lg text-[#1D1D1F]">Flute</p>
-                                    <p class="text-[11px] text-apple-gray mt-1">Pure Sine</p>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/erhu.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <path d="M12 2v20"/><rect x="10" y="10" width="4" height="6" rx="1"/><path d="M8 12h8"/><path d="M8 14h8"/><circle cx="10" cy="4" r="1"/><circle cx="14" cy="4" r="1"/><path d="M10 5l2 3"/><path d="M14 5l-2 3"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Erhu</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Chinese Fiddle</p>
+                                    </div>
                                 </div>
                             </div>
                         </button>
 
-                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="guitar">
+                        <!-- Harmonica -->
+                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="harmonica">
                             <div class="card-border-gradient"></div>
-                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
-                                <span class="text-4xl filter drop-shadow-md">🎸</span>
-                                <div>
-                                    <p class="font-semibold text-lg text-[#1D1D1F]">Guitar</p>
-                                    <p class="text-[11px] text-apple-gray mt-1">Plucked</p>
-                                </div>
-                            </div>
-                        </button>
-
-                        <button class="instrument-btn group relative w-full text-left focus:outline-none" data-instrument="synth">
-                            <div class="card-border-gradient"></div>
-                            <div class="card-inner h-44 rounded-[24px] p-6 flex flex-col justify-between">
-                                <span class="text-4xl filter drop-shadow-md">🎛️</span>
-                                <div>
-                                    <p class="font-semibold text-lg text-[#1D1D1F]">Synth</p>
-                                    <p class="text-[11px] text-apple-gray mt-1">Sawtooth</p>
+                            <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
+                                <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/harmonica.jpg')"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
+                                <div class="relative z-10 h-full p-4 flex flex-col justify-between">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
+                                        <rect x="4" y="9" width="16" height="6" rx="1"/><path d="M6 9v6"/><path d="M9 9v6"/><path d="M12 9v6"/><path d="M15 9v6"/><path d="M18 9v6"/><circle cx="7.5" cy="12" r="0.8" fill="currentColor"/><circle cx="10.5" cy="12" r="0.8" fill="currentColor"/><circle cx="13.5" cy="12" r="0.8" fill="currentColor"/><circle cx="16.5" cy="12" r="0.8" fill="currentColor"/>
+                                    </svg>
+                                    <div>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Harmonica</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Blues Reed</p>
+                                    </div>
                                 </div>
                             </div>
                         </button>
@@ -422,12 +740,12 @@
                                  如果 JS 使用 toggle('hidden') 或 remove('hidden')，
                                  初始状态必须正确，否则会 crash 或显示双按钮。
                             -->
-                            <button id="startBtn" class="w-full h-14 bg-black hover:bg-gray-900 text-white text-[15px] font-semibold rounded-full shadow-lg flex items-center justify-center gap-2">
+                            <button id="startBtn" class="w-full h-14 bg-black hover:bg-gray-900 text-white text-[15px] font-semibold rounded-full shadow-lg flex items-center justify-center gap-2 transform active:scale-[0.98] transition-transform">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                                 Start Engine
                             </button>
-                            
-                            <button id="stopBtn" class="hidden w-full h-14 bg-red-500 hover:bg-red-600 text-white text-[15px] font-semibold rounded-full shadow-lg flex items-center justify-center gap-2">
+
+                            <button id="stopBtn" class="hidden w-full h-14 bg-red-500 hover:bg-red-600 text-white text-[15px] font-semibold rounded-full shadow-lg flex items-center justify-center gap-2 transform active:scale-[0.98] transition-transform">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
                                 Stop Session
                             </button>
@@ -457,7 +775,7 @@
             <!-- Visualizer -->
             <div id="visualizer" class="hidden mb-16 fade-up">
                 <div class="bg-[#161617] rounded-[32px] p-8 md:p-10 shadow-2xl relative overflow-hidden border border-white/10">
-                    <div class="absolute top-[-50%] left-[-10%] w-[80%] h-[200%] bg-gradient-to-r from-blue-500/20 via-purple-500/10 to-transparent rotate-12 blur-3xl pointer-events-none gpu-accelerated"></div>
+                    <div class="absolute top-[-50%] left-[-10%] w-[80%] h-[200%] bg-gradient-to-r from-blue-500/15 via-purple-500/8 to-transparent rotate-12 blur-2xl pointer-events-none gpu-accelerated"></div>
 
                     <div class="relative z-10 flex flex-col md:flex-row gap-8 items-center">
                         <div class="text-center md:text-left min-w-[140px]">
@@ -468,7 +786,7 @@
                             </div>
                         </div>
                         
-                        <div class="flex-1 w-full h-32 bg-black/40 rounded-2xl border border-white/10 p-1 backdrop-blur-md shadow-inner">
+                        <div class="flex-1 w-full h-32 bg-black/50 rounded-2xl border border-white/10 p-1 shadow-inner">
                             <canvas id="pitchCanvas" class="w-full h-full rounded-xl"></canvas>
                         </div>
                     </div>
@@ -479,7 +797,7 @@
             <section id="tipsSection" class="mb-20">
                 <div class="flex items-center justify-between mb-6 px-2">
                     <h2 class="text-2xl font-semibold tracking-tight">Session Tips</h2>
-                    <button id="helpToggle" class="text-sm font-medium text-blue-600 hover:text-blue-700">Show Details</button>
+                    <button id="helpToggle" class="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">Show Details</button>
                 </div>
 
                 <div id="helpContent" class="grid md:grid-cols-3 gap-6">
@@ -520,18 +838,18 @@
                         </p>
 
                         <form id="waitlistForm" class="max-w-md mx-auto relative" onsubmit="event.preventDefault(); handleFormSubmit();">
-                            <div class="input-group relative flex items-center rounded-full bg-gray-50 border border-gray-200 p-1">
-                                <div class="pl-4 text-gray-400 input-icon">
+                            <div class="input-group relative flex items-center rounded-full bg-gray-50 border border-gray-200 p-1 transition-all duration-300">
+                                <div class="pl-4 text-gray-400 input-icon transition-all duration-300">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <input type="email" placeholder="Enter your email address" required
                                     class="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[#1D1D1F] placeholder-gray-400 text-sm font-medium">
                                 <button type="submit" id="submitBtn"
-                                    class="bg-[#1D1D1F] hover:bg-black text-white rounded-full px-6 py-3 text-sm font-bold flex items-center gap-2">
+                                    class="bg-[#1D1D1F] hover:bg-black text-white rounded-full px-6 py-3 text-sm font-bold flex items-center gap-2 transform active:scale-[0.98] transition-transform">
                                     <span>Notify Me</span>
                                 </button>
                             </div>
-                            <p id="formFeedback" class="text-green-600 text-xs font-bold mt-3 opacity-0">
+                            <p id="formFeedback" class="text-green-600 text-xs font-bold mt-3 opacity-0 transition-opacity duration-300 transform translate-y-2">
                                 You're on the list! 🚀
                             </p>
                         </form>

@@ -1,4 +1,6 @@
 import { getNearestScaleNote } from './core/music-scales.js';
+import { KarplusStrong } from './core/karplus-strong.js';
+import instrumentPresetManager from './config/instrument-presets.js';
 
 /**
  * Continuous Frequency Synthesizer Engine
@@ -36,119 +38,10 @@ export class ContinuousSynthEngine {
         this.appConfig = options.appConfig || null;
 
         //  乐器预设配置 (从外部加载,向后兼容)
-        this.instrumentPresets = options.instrumentPresets || {
-            saxophone: {
-                oscillator: { type: 'sawtooth' },
-                envelope: {
-                    attack: 0.01,
-                    decay: 0.2,
-                    sustain: 0.8,
-                    release: 0.3
-                },
-                filterEnvelope: {
-                    baseFrequency: 2000,
-                    octaves: 2,
-                    attack: 0.02,
-                    decay: 0.1,
-                    sustain: 0.5,
-                    release: 0.3
-                },
-                portamento: 0.03  // 30ms 滑音时间（中等表现力）
-            },
-            violin: {
-                oscillator: { type: 'sawtooth' },
-                envelope: {
-                    attack: 0.1,
-                    decay: 0.1,
-                    sustain: 0.9,
-                    release: 0.4
-                },
-                filterEnvelope: {
-                    baseFrequency: 1500,
-                    octaves: 3,
-                    attack: 0.08,
-                    decay: 0.2,
-                    sustain: 0.7,
-                    release: 0.4
-                },
-                portamento: 0.05  // 50ms 更明显的滑音（弦乐特征）
-            },
-            piano: {
-                oscillator: { type: 'triangle' },
-                envelope: {
-                    attack: 0.005,
-                    decay: 0.3,
-                    sustain: 0.1,
-                    release: 1.0
-                },
-                filterEnvelope: {
-                    baseFrequency: 3000,
-                    octaves: 1,
-                    attack: 0.005,
-                    decay: 0.2,
-                    sustain: 0.2,
-                    release: 0.8
-                },
-                portamento: 0.01  // 10ms 快速（钢琴音色更清晰）
-            },
-            flute: {
-                oscillator: { type: 'sine' },
-                envelope: {
-                    attack: 0.02,
-                    decay: 0.1,
-                    sustain: 0.8,
-                    release: 0.2
-                },
-                filterEnvelope: {
-                    baseFrequency: 2500,
-                    octaves: 2.5,
-                    attack: 0.03,
-                    decay: 0.15,
-                    sustain: 0.6,
-                    release: 0.2
-                },
-                portamento: 0.025  // 25ms 轻快的滑音
-            },
-            guitar: {
-                oscillator: { type: 'triangle' },
-                envelope: {
-                    attack: 0.005,
-                    decay: 0.4,
-                    sustain: 0.1,
-                    release: 0.6
-                },
-                filterEnvelope: {
-                    baseFrequency: 2200,
-                    octaves: 1.5,
-                    attack: 0.005,
-                    decay: 0.3,
-                    sustain: 0.2,
-                    release: 0.5
-                },
-                portamento: 0.015  // 15ms 适度滑音
-            },
-            synth: {
-                oscillator: { type: 'square' },
-                envelope: {
-                    attack: 0.005,
-                    decay: 0.1,
-                    sustain: 0.7,
-                    release: 0.2
-                },
-                filterEnvelope: {
-                    baseFrequency: 3500,
-                    octaves: 2,
-                    attack: 0.01,
-                    decay: 0.05,
-                    sustain: 0.8,
-                    release: 0.15
-                },
-                portamento: 0.02  // 20ms 电子感觉
-            }
-        };
+        this.instrumentPresets = options.instrumentPresets || instrumentPresetManager.presets;
 
         // 当前状态
-        this.currentInstrument = 'saxophone';
+        this.currentInstrument = 'flute';
         this.currentSynth = null;
         this.isPlaying = false;
         this.currentFrequency = 0;
@@ -181,6 +74,13 @@ export class ContinuousSynthEngine {
             Q: 1
         });
 
+        // Delay (Echo)
+        this.delay = new Tone.FeedbackDelay({
+            delayTime: 0.25,
+            feedback: 0.4,
+            wet: 0
+        });
+
         this.reverb = new Tone.Reverb({
             decay: 1.5,
             wet: 0.2
@@ -198,7 +98,8 @@ export class ContinuousSynthEngine {
 
         // 连接效果器链
         this.vibrato.connect(this.filter);
-        this.filter.connect(this.reverb);
+        this.filter.connect(this.delay);
+        this.delay.connect(this.reverb);
 
         // 连接噪声层到主效果链
         this.noiseSource.connect(this.noiseFilter);
@@ -287,15 +188,22 @@ export class ContinuousSynthEngine {
             this.currentSynth.dispose();
         }
 
-        const preset = this.instrumentPresets[instrument] || this.instrumentPresets.saxophone;
+        const preset = this.instrumentPresets[instrument] || this.instrumentPresets.flute;
         const type = preset.type || 'MonoSynth';
 
         try {
             switch (type) {
+                case 'KarplusStrong':
+                    this.currentSynth = new KarplusStrong({
+                        damping: preset.damping,
+                        resonance: preset.resonance
+                    });
+                    break;
+
                 case 'FMSynth':
                     this.currentSynth = new Tone.FMSynth({
-                        harmonicity: preset.modulation?.harmonicity || 3,
-                        modulationIndex: preset.modulation?.modulationIndex || 10,
+                        harmonicity: preset.harmonicity || 3,
+                        modulationIndex: preset.modulationIndex || 10,
                         oscillator: preset.oscillator,
                         modulation: preset.modulation,
                         envelope: preset.envelope,
@@ -306,7 +214,7 @@ export class ContinuousSynthEngine {
 
                 case 'AMSynth':
                     this.currentSynth = new Tone.AMSynth({
-                        harmonicity: preset.modulation?.harmonicity || 3,
+                        harmonicity: preset.harmonicity || 3,
                         oscillator: preset.oscillator,
                         modulation: preset.modulation,
                         envelope: preset.envelope,
@@ -317,6 +225,9 @@ export class ContinuousSynthEngine {
 
                 case 'MonoSynth':
                 default:
+                    if (type !== 'MonoSynth') {
+                        console.warn(`[ContinuousSynth] Unknown type '${type}', falling back to MonoSynth`);
+                    }
                     this.currentSynth = new Tone.MonoSynth({
                         oscillator: preset.oscillator,
                         envelope: preset.envelope,
@@ -327,13 +238,17 @@ export class ContinuousSynthEngine {
             }
 
             // 初始音量设为静音，防止 start() 时的瞬时爆音
-            this.currentSynth.volume.value = -60;
+            // 注意：KarplusStrong 使用 .output.gain 或 .volume
+            if (this.currentSynth.volume) {
+                this.currentSynth.volume.value = -60;
+            }
 
             // 连接到效果器链
+            // 注意：KarplusStrong 也是 Tone.js 兼容节点，拥有 connect 方法
             this.currentSynth.connect(this.vibrato);
 
             this.currentInstrument = instrument;
-            console.log(`[ContinuousSynth] Created: ${instrument} (${type}, portamento: ${preset.portamento}s)`);
+            console.log(`[ContinuousSynth] Created: ${instrument} (${type}, portamento: ${preset.portamento || 0}s)`);
 
         } catch (error) {
             console.error(`[ContinuousSynth] Failed to create synthesizer for ${instrument}:`, error);
@@ -442,15 +357,18 @@ export class ContinuousSynthEngine {
             
             // 🔥 [CONTINUOUS CONTROL FIX]
             // 使用固定 Velocity 1.0，将动态完全交给 Volume 控制
-            // 避免 Envelope Velocity 锁定导致的 "响度上限" 问题
             const velocity = 1.0;
 
             // 立即更新目标音量 (从 -60dB 平滑上升)
             this.updateVolume(volume);
 
-            // 触发包络启动（但不指定音符名称）
-            // 使用频率直接设置
-            this.currentSynth.triggerAttack(initialFrequency, now, velocity);
+            // 触发包络启动
+            if (this.currentSynth instanceof KarplusStrong) {
+                this.currentSynth.triggerAttack(initialFrequency, now, velocity);
+            } else {
+                // Standard Tone.js Synth
+                this.currentSynth.triggerAttack(initialFrequency, now, velocity);
+            }
 
             this.isPlaying = true;
             this.currentFrequency = initialFrequency;
@@ -490,15 +408,24 @@ export class ContinuousSynthEngine {
         const rampTime = 0.005 + (this.retuneSpeed * 0.1);
 
         // 计算相对于当前振荡器频率的变化 (防抖)
-        const currentOscFreq = this.currentSynth.frequency.value; // 获取当前实际值
-        const deviation = Math.abs(targetFrequency - currentOscFreq) / currentOscFreq;
+        const currentOscFreq = (this.currentSynth instanceof KarplusStrong) 
+            ? this.currentSynth.currentFrequency 
+            : (this.currentSynth.frequency ? this.currentSynth.frequency.value : targetFrequency);
+            
+        const deviation = Math.abs(targetFrequency - currentOscFreq) / (currentOscFreq || 1);
 
         // 只有明显变化才更新（避免微小抖动）
         if (deviation > this.frequencyUpdateThreshold) {
             const startTime = performance.now();
-
-            // 🔥 应用频率更新
-            this.currentSynth.frequency.rampTo(targetFrequency, rampTime);
+            
+            // Unified Continuous Slide Logic
+            // Since we removed discrete instruments (Piano/Guitar), all instruments 
+            // now benefit from smooth continuous frequency updates (Portamento).
+            if (this.currentSynth instanceof KarplusStrong) {
+                this.currentSynth.setFrequency(targetFrequency, rampTime);
+            } else if (this.currentSynth.frequency) {
+                this.currentSynth.frequency.rampTo(targetFrequency, rampTime);
+            }
 
             // 性能监控
             const latency = performance.now() - startTime;
@@ -645,6 +572,18 @@ export class ContinuousSynthEngine {
         if (this.currentSynth && this.currentSynth.volume) {
             this.currentSynth.volume.rampTo(targetDb, 0.05);
         }
+
+        // 🔥 Dynamic FM: Map Volume to Brightness (Modulation Index)
+        // Essential for Brass/Winds (Louder = Brighter)
+        const preset = this.instrumentPresets[this.currentInstrument];
+        if (this.currentSynth instanceof Tone.FMSynth && preset?.dynamicModulation) {
+            // Base index from preset, add up to 10 based on volume
+            const baseIndex = preset.modulationIndex || 0;
+            const dynamicRange = 10; 
+            const targetIndex = baseIndex + (normalized * dynamicRange);
+            
+            this.currentSynth.modulationIndex.rampTo(targetIndex, 0.05);
+        }
         
         // Debug 日志 (仅在音量大幅变化时)
         // if (Math.random() < 0.01) console.log(`Vol: ${inputVolume.toFixed(3)} -> ${targetDb.toFixed(1)} dB`);
@@ -679,7 +618,12 @@ export class ContinuousSynthEngine {
                 // 重新触发 attack (retriggering)
                 // 同样使用 velocity 1.0
                 this.updateVolume(volume || 0.5);
-                this.currentSynth.triggerAttack(frequency, Tone.now(), 1.0);
+                
+                if (this.currentSynth instanceof KarplusStrong) {
+                    this.currentSynth.triggerAttack(frequency, Tone.now(), 1.0);
+                } else {
+                    this.currentSynth.triggerAttack(frequency, Tone.now(), 1.0);
+                }
             }
         }
 
@@ -757,7 +701,14 @@ export class ContinuousSynthEngine {
     stop() {
         if (this.isPlaying && this.currentSynth) {
             try {
-                this.currentSynth.triggerRelease(Tone.now());
+                const now = Tone.now();
+                
+                if (this.currentSynth instanceof KarplusStrong) {
+                    this.currentSynth.triggerRelease(now);
+                } else {
+                    this.currentSynth.triggerRelease(now);
+                }
+                
                 this.isPlaying = false;
                 this.currentFrequency = 0;
 
@@ -827,6 +778,15 @@ export class ContinuousSynthEngine {
     }
 
     /**
+     * 设置延迟湿度
+     */
+    setDelayWet(wetness) {
+        if (this.delay) {
+            this.delay.wet.value = wetness;
+        }
+    }
+
+    /**
      * 清理资源
      */
     dispose() {
@@ -842,6 +802,7 @@ export class ContinuousSynthEngine {
         if (this.currentSynth) this.currentSynth.dispose();
         this.vibrato.dispose();
         this.filter.dispose();
+        this.delay.dispose();
         this.reverb.dispose();
 
         //  清理噪声层

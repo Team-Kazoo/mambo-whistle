@@ -14,6 +14,7 @@ import { AppContainer } from './core/app-container.js';
 import { ExpressiveFeatures } from './expressive-features.js';
 import instrumentPresetManager from './config/instrument-presets.js';
 import { ContinuousSynthEngine } from './continuous-synth.js'; // Fixed: Import class
+import { AiHarmonizer } from './features/ai-harmonizer.js';
 
 class KazooApp {
     /**
@@ -25,6 +26,7 @@ class KazooApp {
      * @param {Object} services.performanceMonitor - 性能监控器
      * @param {Object} services.synthesizerEngine - Legacy 合成器引擎
      * @param {Object} services.continuousSynthEngine - Continuous 合成器引擎
+     * @param {Object} services.aiHarmonizer - AI 伴奏模块
      * @param {Function} services.ExpressiveFeatures - 表现力特征提取类
      */
     constructor(services = {}) {
@@ -37,6 +39,7 @@ class KazooApp {
         this.performanceMonitor = services.performanceMonitor || null;
         this.synthesizerEngine = services.synthesizerEngine || null;
         this.continuousSynthEngine = services.continuousSynthEngine || null;
+        this.aiHarmonizer = services.aiHarmonizer || null;
         this.ExpressiveFeatures = services.ExpressiveFeatures || null;
 
         //  音频系统
@@ -66,6 +69,15 @@ class KazooApp {
             modeToggle: document.getElementById('modeToggle'),
             modeText: document.getElementById('modeText'),
             navLinks: document.querySelectorAll('[data-scroll-target]'),
+            
+            // AI Jam Button
+            aiJamBtn: document.getElementById('aiJamBtn'),
+            aiProgressBar: document.getElementById('aiProgressBar'),
+            aiIconIdle: document.getElementById('aiIconIdle'),
+            aiIconLoading: document.getElementById('aiIconLoading'),
+            aiIconActive: document.getElementById('aiIconActive'),
+            aiJamTitle: document.getElementById('aiJamTitle'),
+            aiJamStatus: document.getElementById('aiJamStatus'),
 
             // 状态徽章
             instrumentStatus: document.getElementById('instrumentStatus'),
@@ -113,12 +125,14 @@ class KazooApp {
             delayValue: document.getElementById('delayValue')
         };
 
+
         // 可视化设置
         this.visualizer = null;
 
         // Device State
         this.selectedInputId = 'default';
         this.selectedOutputId = 'default';
+        this.selectedInstrument = 'flute'; // Track user selection before start
     }
 
     /**
@@ -281,30 +295,62 @@ class KazooApp {
             });
         }
 
-        if (this.ui.strengthSlider) {
-            this.ui.strengthSlider.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                this.ui.strengthValue.textContent = `${val}%`;
-                updateAutoTune();
-            });
-        }
+        // Helper for Segmented Controls
+        const setupSegmentedControl = (containerId, onSelect, defaultValue) => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
 
-        if (this.ui.speedSlider) {
-            this.ui.speedSlider.addEventListener('input', (e) => {
-                const val = parseInt(e.target.value);
-                let label = "Natural";
-                if (val < 20) label = "Robotic";
-                else if (val < 50) label = "Fast";
-                else if (val > 80) label = "Slow";
-                
-                this.ui.speedValue.textContent = `${val}ms (${label})`;
-                
-                if (this.continuousSynthEngine) {
-                    // Slider 0-100 -> Speed 0.0-1.0
-                    this.continuousSynthEngine.setRetuneSpeed(val / 100);
-                }
+            const buttons = container.querySelectorAll('button');
+            // Enhanced Active State: White bg, Blue text, Bold, Shadow, Ring border
+            const activeClass = ['bg-white', 'shadow-md', 'text-blue-600', 'font-bold', 'ring-1', 'ring-black/5'];
+            // Enhanced Inactive State: Gray text, subtle hover
+            const inactiveClass = ['text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-200/50'];
+
+            const updateState = (selectedVal) => {
+                buttons.forEach(btn => {
+                    if (btn.dataset.value === String(selectedVal)) {
+                        btn.classList.add(...activeClass);
+                        btn.classList.remove(...inactiveClass);
+                    } else {
+                        btn.classList.remove(...activeClass);
+                        btn.classList.add(...inactiveClass);
+                    }
+                });
+                onSelect(parseFloat(selectedVal));
+            };
+
+            // Bind clicks
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    updateState(btn.dataset.value);
+                    // Also toggle Main Switch if user interacts with controls
+                    if (this.ui.autoTuneToggle && !this.ui.autoTuneToggle.checked) {
+                        this.ui.autoTuneToggle.checked = true;
+                        this._updateAutoTuneState(); 
+                    }
+                });
             });
-        }
+
+            // Initialize
+            updateState(defaultValue);
+        };
+
+        // Init Segmented Controls
+        setupSegmentedControl('strengthControl', (val) => {
+            console.log(`[UI] Strength selected: ${val}`);
+            // Store for toggle logic
+            this._lastStrengthVal = val; 
+            if (this.continuousSynthEngine) {
+                this.continuousSynthEngine.setAutoTuneStrength(val);
+            }
+        }, 1.0); // Default Hard (so toggle ON has immediate effect)
+
+        setupSegmentedControl('speedControl', (val) => {
+            console.log(`[UI] Speed selected: ${val}`);
+            if (this.continuousSynthEngine) {
+                this.continuousSynthEngine.setRetuneSpeed(val);
+            }
+        }, 0.0); // Default Robot (Fast)
 
         // Effects Controls (Placeholders)
         if (this.ui.reverbSlider) {
@@ -321,7 +367,9 @@ class KazooApp {
             this.ui.delaySlider.addEventListener('input', (e) => {
                 const val = parseInt(e.target.value);
                 this.ui.delayValue.textContent = `${val}%`;
-                // TODO: Wire up Delay effect in Phase 3
+                if (this.continuousSynthEngine) {
+                    this.continuousSynthEngine.setDelayWet(val / 100);
+                }
             });
         }
 
@@ -339,6 +387,9 @@ class KazooApp {
         this.ui.instrumentBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const instrument = e.currentTarget.dataset.instrument;
+                
+                // Update internal state (for when engine starts later)
+                this.selectedInstrument = instrument;
 
                 // 🔥 [ARCHITECTURE FIX] 视觉切换逻辑统一到 main.js，移除 HTML 内联重复代码
                 // 移除其他按钮的 active 类
@@ -384,6 +435,109 @@ class KazooApp {
                     const targetId = link.dataset.scrollTarget;
                     this.scrollToSection(targetId);
                 });
+            });
+        }
+
+        // AI Jam Toggle
+        if (this.ui.aiJamBtn) {
+            // Helper to reset classes
+            const resetBtnClasses = () => {
+                this.ui.aiJamBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+                this.ui.aiJamBtn.classList.add('bg-white/80', 'hover:bg-white', 'text-gray-900');
+                
+                this.ui.aiJamTitle.classList.remove('text-white');
+                this.ui.aiJamTitle.classList.add('text-gray-900');
+                
+                this.ui.aiJamStatus.classList.remove('text-blue-100');
+                this.ui.aiJamStatus.classList.add('text-gray-500');
+            };
+
+            const setActiveClasses = () => {
+                this.ui.aiJamBtn.classList.remove('bg-white/80', 'hover:bg-white', 'text-gray-900');
+                this.ui.aiJamBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+
+                this.ui.aiJamTitle.classList.remove('text-gray-900');
+                this.ui.aiJamTitle.classList.add('text-white');
+                
+                this.ui.aiJamStatus.classList.remove('text-gray-500');
+                this.ui.aiJamStatus.classList.add('text-blue-100');
+            };
+
+            // Status Update Callback
+            if (this.aiHarmonizer) {
+                this.aiHarmonizer.onStatusChange = ({ status, message }) => {
+                    console.log(`[AI Jam] Status: ${status} - ${message}`);
+                    
+                    // Hide all icons first
+                    this.ui.aiIconIdle.classList.add('hidden');
+                    this.ui.aiIconLoading.classList.add('hidden');
+                    this.ui.aiIconActive.classList.add('hidden');
+                    this.ui.aiProgressBar.style.width = '0%'; // Reset progress by default
+
+                    if (status === 'loading') {
+                        // Loading State
+                        this.ui.aiIconLoading.classList.remove('hidden');
+                        this.ui.aiJamTitle.textContent = 'Downloading...';
+                        this.ui.aiJamStatus.textContent = ' ~5MB Model';
+                        this.ui.aiJamBtn.disabled = true;
+                        
+                        // Simulate Progress
+                        setTimeout(() => { this.ui.aiProgressBar.style.width = '40%'; }, 100);
+                        setTimeout(() => { this.ui.aiProgressBar.style.width = '80%'; }, 2000);
+                        
+                    } else if (status === 'ready') {
+                        // Active State
+                        setActiveClasses();
+                        this.ui.aiIconActive.classList.remove('hidden');
+                        this.ui.aiJamTitle.textContent = 'Smart Jam';
+                        this.ui.aiJamStatus.textContent = 'Listening...';
+                        this.ui.aiJamBtn.disabled = false;
+
+                    } else if (status === 'processing') {
+                        // Thinking State (Keep Active Look)
+                        setActiveClasses();
+                        this.ui.aiIconActive.classList.remove('hidden');
+                        this.ui.aiJamStatus.textContent = 'Generating...';
+                        
+                    } else if (status === 'idle') {
+                        // Idle State
+                        resetBtnClasses();
+                        this.ui.aiIconIdle.classList.remove('hidden');
+                        this.ui.aiJamTitle.textContent = 'Smart Jam';
+                        this.ui.aiJamStatus.textContent = 'Off';
+                        this.ui.aiJamBtn.disabled = false;
+
+                    } else if (status === 'error') {
+                        // Error State
+                        resetBtnClasses();
+                        this.ui.aiIconIdle.classList.remove('hidden');
+                        this.ui.aiJamTitle.textContent = 'Error';
+                        this.ui.aiJamStatus.textContent = 'Try Again';
+                        this.ui.aiJamBtn.disabled = false;
+                    }
+                };
+            }
+
+            this.ui.aiJamBtn.addEventListener('click', async () => {
+                if (!this.aiHarmonizer) return;
+
+                try {
+                    // 1. Ensure Audio Context is running
+                    if (Tone.context.state !== 'running') {
+                        await Tone.start();
+                        console.log('[AI Jam] AudioContext resumed by user click');
+                    }
+
+                    // 2. Toggle AI
+                    if (this.aiHarmonizer.enabled) {
+                        this.aiHarmonizer.disable();
+                    } else {
+                        await this.aiHarmonizer.enable();
+                    }
+                } catch (err) {
+                    console.error('[AI Jam] Click handler error:', err);
+                    alert("Please click 'Start Engine' first to enable audio features.");
+                }
             });
         }
 
@@ -489,17 +643,27 @@ class KazooApp {
         if (!this.continuousSynthEngine || !this.ui.autoTuneToggle) return;
 
         const isEnabled = this.ui.autoTuneToggle.checked;
-        const sliderVal = parseInt(this.ui.strengthSlider.value);
+        // Use stored value or default to 1.0 (Hard) if undefined
+        const targetStrength = this._lastStrengthVal !== undefined ? this._lastStrengthVal : 1.0;
         
-        // If enabled, use slider value. If disabled, force 0.
-        const finalStrength = isEnabled ? (sliderVal / 100) : 0.0;
+        // If enabled, use target value. If disabled, force 0.
+        const finalStrength = isEnabled ? targetStrength : 0.0;
         
         this.continuousSynthEngine.setAutoTuneStrength(finalStrength);
         
-        // Optional: Visually disable slider if toggle is off
-        if (this.ui.strengthSlider) {
-            this.ui.strengthSlider.disabled = !isEnabled;
-            this.ui.strengthSlider.style.opacity = isEnabled ? '1' : '0.5';
+        // Visual feedback for controls opacity
+        const strengthCtrl = document.getElementById('strengthControl');
+        const speedCtrl = document.getElementById('speedControl');
+        const opacity = isEnabled ? '1' : '0.5';
+        const pointerEvents = isEnabled ? 'auto' : 'none';
+        
+        if (strengthCtrl) {
+            strengthCtrl.style.opacity = opacity;
+            strengthCtrl.style.pointerEvents = pointerEvents;
+        }
+        if (speedCtrl) {
+            speedCtrl.style.opacity = opacity;
+            speedCtrl.style.pointerEvents = pointerEvents;
         }
     }
 
@@ -621,10 +785,12 @@ class KazooApp {
             console.log('[Main]  AudioIO 实例已注册到容器');
         }
 
-        // 2. 启动音频系统 (先启动，获取实际 mode 和 bufferSize)
-        const result = await this.audioIO.start();
-        console.log(' AudioIO 已启动:', result);
-
+                    // 2. 启动音频系统 (先启动，获取实际 mode 和 bufferSize)
+                const result = await this.audioIO.start();
+                console.log(' AudioIO 已启动:', result);
+        
+                // 2.1 Refresh device list (now that we have permission, labels should be available)
+                await this._refreshDeviceList();
         // 2.5 初始化延迟分析器 (如果启用)
         if (window.__ENABLE_LATENCY_PROFILER__ && window.LatencyProfiler) {
             const profiler = new window.LatencyProfiler(this.audioIO.audioContext);
@@ -726,6 +892,12 @@ class KazooApp {
         if (!this.currentEngine.currentSynth) {
             console.log('Initializing synthesizer engine...');
             await this.currentEngine.initialize();
+            
+            // 🔥 Apply pre-selected instrument (User might have clicked before Start)
+            if (this.selectedInstrument) {
+                console.log(`[Main] Applying pre-selected instrument: ${this.selectedInstrument}`);
+                this.currentEngine.changeInstrument(this.selectedInstrument);
+            }
         }
 
         // 初始化音高检测 (ScriptProcessor 模式需要)
@@ -830,6 +1002,11 @@ class KazooApp {
             }
         }
 
+        // AI Processing Hook
+        if (this.aiHarmonizer && this.aiHarmonizer.enabled) {
+            this.aiHarmonizer.processFrame(pitchFrame);
+        }
+
         // 更新显示
         this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
         this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
@@ -891,7 +1068,12 @@ class KazooApp {
                 }
             }
 
-            // 更新显示
+            // AI Processing Hook
+        if (this.aiHarmonizer && this.aiHarmonizer.enabled) {
+            this.aiHarmonizer.processFrame(pitchFrame);
+        }
+
+        // 更新显示
             this.ui.currentNote.textContent = `${pitchFrame.note}${pitchFrame.octave}`;
             this.ui.currentFreq.textContent = `${pitchFrame.frequency.toFixed(1)} Hz`;
             this.ui.confidence.textContent = `${Math.round(pitchFrame.confidence * 100)}%`;
@@ -1339,6 +1521,14 @@ container.register('continuousSynthEngine', (c) => {
 }, {
     singleton: true,
     dependencies: ['config', 'instrumentPresetManager']
+});
+
+// 8.5 AI 伴奏模块 (Step 2: 容器创建新实例)
+container.register('aiHarmonizer', () => {
+    console.log('[Container]  创建 AiHarmonizer 实例...');
+    return new AiHarmonizer();
+}, {
+    singleton: true
 });
 
 // 9. 主应用实例 (Step 2: 传入服务对象，实现依赖注入)
