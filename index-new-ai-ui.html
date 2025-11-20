@@ -39,18 +39,18 @@
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /* Apple Glass Morphism */
+            /* Apple Glass Morphism */
         .glass {
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: #ffffff;
+            /* backdrop-filter: blur(20px); */
+            /* -webkit-backdrop-filter: blur(20px); */
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .glass-dark {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            background: #1d1d1f;
+            /* backdrop-filter: blur(24px); */
+            /* -webkit-backdrop-filter: blur(24px); */
         }
 
         /* Instrument Card Google Border */
@@ -61,11 +61,11 @@
 
         .card-inner {
             position: relative;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: #ffffff;
+            /* backdrop-filter: blur(12px); */
+            /* -webkit-backdrop-filter: blur(12px); */
             z-index: 10;
-            border: 1px solid rgba(255,255,255,0.5);
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .card-border-gradient {
@@ -75,7 +75,7 @@
             background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
             z-index: 0;
             opacity: 0;
-            transition: opacity 0.3s;
+            /* transition: opacity 0.3s; */
         }
 
         .instrument-btn.active .card-border-gradient {
@@ -83,7 +83,7 @@
         }
 
         .instrument-btn.active .card-inner {
-            background: rgba(255, 255, 255, 0.95);
+            background: #FFFFFF;
             border-color: transparent;
         }
 
@@ -100,7 +100,7 @@
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
             background-color: #e5e5e7;
-            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* transition: .4s cubic-bezier(0.4, 0, 0.2, 1); */
             border-radius: 31px;
         }
         .toggle-slider:before {
@@ -111,7 +111,7 @@
             left: 2px;
             bottom: 2px;
             background-color: white;
-            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
+            /* transition: .4s cubic-bezier(0.4, 0, 0.2, 1); */
             border-radius: 50%;
             box-shadow: 0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16);
         }
@@ -120,21 +120,21 @@
             transform: translateX(20px);  /* 51px - 4px(padding) - 27px(circle) = 20px */
         }
 
-        /* AI Pulse Animation */
-        @keyframes ai-pulse {
+        /* AI Pulse Animation - Disabled */
+        /* @keyframes ai-pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        .ai-pulse { animation: ai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
-        /* Modal Slide In */
-        .modal-enter {
+        .ai-pulse { animation: ai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; } */
+        
+        /* Modal Slide In - Disabled */
+        /* .modal-enter {
             animation: slideIn 0.3s ease-out forwards;
         }
         @keyframes slideIn {
             from { transform: translateX(100%); }
             to { transform: translateX(0); }
-        }
+        } */
 
         /* Google Font Helper */
         .font-google {
@@ -822,14 +822,14 @@
 
             <!-- NEW PROMO SECTION (Hardware Teaser) -->
             <section class="relative py-32 mt-12 overflow-hidden rounded-[40px] bg-white border border-gray-100 shadow-2xl text-center group font-google">
-                <!-- Confetti Background -->
-                <div class="absolute inset-0 pointer-events-none overflow-hidden" id="confetti-bg">
+                <!-- Confetti Background - Disabled -->
+                <!-- <div class="absolute inset-0 pointer-events-none overflow-hidden" id="confetti-bg">
                     <div class="absolute top-[15%] left-[10%] w-1.5 h-1.5 bg-blue-500/60 rounded-full"></div>
                     <div class="absolute top-[35%] right-[20%] w-2 h-2 bg-red-500/60 rounded-full"></div>
                     <div class="absolute bottom-[25%] left-[25%] w-1 h-1 bg-yellow-500/60 rounded-full"></div>
                     <div class="absolute top-[50%] left-[50%] w-1.5 h-1.5 bg-green-500/60 rounded-full"></div>
                     <div class="absolute bottom-[40%] right-[10%] w-2 h-2 bg-purple-500/60 rounded-full"></div>
-                </div>
+                </div> -->
 
                 <div class="relative z-10 max-w-4xl mx-auto px-6">
                     <!-- Small Logo -->

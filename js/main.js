@@ -1438,6 +1438,10 @@ class KazooApp {
     }
 
     drawVisualizer() {
+        // GPU Optimization: Visualizer disabled
+        return;
+
+        /*
         const { ctx, history, minMidi, maxMidi } = this.visualizer;
         const canvas = this.ui.pitchCanvas;
         if (!ctx || !canvas) return;
@@ -1576,6 +1580,7 @@ class KazooApp {
             ctx.textAlign = 'center';
             ctx.fillText(noteName, width - 22, y);
         }
+        */
     }
 
     resizeVisualizer() {
