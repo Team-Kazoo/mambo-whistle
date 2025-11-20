@@ -507,30 +507,56 @@ class AudioIO {
             idealConstraints.audio.deviceId = { exact: deviceId };
         }
 
-        // 3. 尝试获取流 (带自动降级重试)
+        // 3. 尝试获取流 (带两级降级重试)
         try {
             console.log('[AudioIO] 尝试理想音频配置:', JSON.stringify(idealConstraints.audio));
             this.stream = await navigator.mediaDevices.getUserMedia(idealConstraints);
         } catch (error) {
-            console.warn('[AudioIO] 理想配置失败，尝试降级配置...', error.name);
+            console.warn('[AudioIO] 理想配置失败，尝试安全配置...', error.name);
 
-            // 降级策略: 移除所有高级音频处理约束, 仅保留 deviceId (如果存在)
-            const fallbackConstraints = {
+            // Level 2: 安全配置 (Safe Config)
+            // 移除所有高级音频处理约束, 但保留 deviceId (如果用户指定了)
+            const safeConstraints = {
                 audio: true,
                 video: false
             };
 
             if (deviceId && deviceId !== 'default') {
-                fallbackConstraints.audio = { deviceId: { exact: deviceId } };
+                safeConstraints.audio = { deviceId: { exact: deviceId } };
             }
 
             try {
-                console.log('[AudioIO] 尝试安全(回退)配置:', JSON.stringify(fallbackConstraints.audio));
-                this.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-                console.warn('[AudioIO]  已使用降级配置启动 (可能存在回声或延迟)');
-            } catch (fallbackError) {
-                // 错误处理 (保持原有逻辑)
-                this._handleGetUserMediaError(fallbackError);
+                console.log('[AudioIO] 尝试安全配置:', JSON.stringify(safeConstraints.audio));
+                this.stream = await navigator.mediaDevices.getUserMedia(safeConstraints);
+                console.warn('[AudioIO]  已使用安全配置启动 (可能存在回声或延迟)');
+            } catch (safeError) {
+                console.warn('[AudioIO] 安全配置失败 (可能是 DeviceID 无效)，尝试最终回退 (System Default)...', safeError.name);
+
+                // Level 3: 最终回退 (System Default)
+                // 放弃指定的 deviceId，只请求任意可用麦克风
+                if (deviceId && deviceId !== 'default') {
+                    const fallbackConstraints = {
+                        audio: true, // 仅请求音频，不指定设备
+                        video: false
+                    };
+
+                    try {
+                        console.log('[AudioIO] 尝试最终回退 (System Default):', JSON.stringify(fallbackConstraints.audio));
+                        this.stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                        console.warn('[AudioIO]  ⚠️ 无法使用指定设备，已回退到系统默认麦克风');
+                        
+                        // 通知外部配置已更改 (可选)
+                        if (this.config) {
+                            this.config.inputDeviceId = 'default';
+                        }
+                    } catch (fallbackError) {
+                         // 彻底失败
+                        this._handleGetUserMediaError(fallbackError);
+                    }
+                } else {
+                    // 如果本来就是 Default 还失败了，那就是真失败了
+                    this._handleGetUserMediaError(safeError);
+                }
             }
         }
 

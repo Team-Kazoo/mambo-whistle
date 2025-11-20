@@ -152,7 +152,7 @@ a:hover {
 }
 
 .start-cta:hover {
-    /* transform removed */
+    transform: translateY(-2px) scale(1.01);
 }
 
 .start-cta:active {
@@ -166,7 +166,7 @@ a:hover {
 }
 
 .stop-cta:hover {
-    /* transform removed */
+    transform: translateY(-1px) scale(1.01);
 }
 
 .helper-text {
@@ -272,10 +272,16 @@ a:hover {
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    animation: fadeIn 0.3s;
 }
 
 .modal-overlay.show {
     display: flex;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .modal {
@@ -285,6 +291,12 @@ a:hover {
     max-width: 500px;
     width: 90%;
     box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 .modal-step-indicator {
@@ -324,8 +336,49 @@ a:hover {
     transition: width 0.1s linear;
 }
 
-/* Custom Animations */
-/* pulse-slow removed */
+/* Custom Animations (Optimized for Performance) */
+
+/* 1. Hardware Accelerated Scale */
+.hover-scale {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform; /* Hint to browser to promote layer */
+}
+
+.hover-scale:hover {
+    transform: scale(1.03);
+}
+
+.active-scale {
+    transition: transform 0.1s ease-out;
+}
+
+.active-scale:active {
+    transform: scale(0.97);
+}
+
+/* 2. Opacity-only Pulse (Cheaper than scale/shadow pulse) */
+@keyframes pulse-opacity {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.pulse-opacity {
+    animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 3. Smooth Modal Transitions (No Keyframes) */
+.modal-transition {
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+    pointer-events: none;
+}
+
+.modal-transition.active {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
 
 /* Accessibility - Reduce Motion */
 @media (prefers-reduced-motion: reduce) {
