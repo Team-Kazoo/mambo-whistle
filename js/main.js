@@ -1438,10 +1438,6 @@ class KazooApp {
     }
 
     drawVisualizer() {
-        // GPU Optimization: Visualizer disabled
-        return;
-
-        /*
         const { ctx, history, minMidi, maxMidi } = this.visualizer;
         const canvas = this.ui.pitchCanvas;
         if (!ctx || !canvas) return;
@@ -1503,26 +1499,18 @@ class KazooApp {
             }
         }
 
-        // 3. Draw Pitch Curve
+        // 3. Draw Pitch Curve (保留音高展示，优化 GPU 开销)
         if (history.length < 2) return;
 
         ctx.beginPath();
         
-        // Create Gradient
-        const gradient = ctx.createLinearGradient(0, 0, width, 0);
-        gradient.addColorStop(0, 'rgba(66, 133, 244, 0)');
-        gradient.addColorStop(0.2, 'rgba(66, 133, 244, 0.5)');
-        gradient.addColorStop(0.8, 'rgba(52, 168, 83, 0.8)');
-        gradient.addColorStop(1, '#fff');
-
-        ctx.strokeStyle = gradient;
-        ctx.lineWidth = 3;
+        // 简化：使用纯色代替渐变以降低 GPU 开销
+        ctx.strokeStyle = 'rgba(66, 133, 244, 0.8)';
+        ctx.lineWidth = 2; // 稍微减小线宽
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
 
-        // Filter out low confidence points for the path?
-        // Or just draw gaps. Let's draw a continuous line but skip 0 freq.
-        
+        // 绘制音高曲线
         let started = false;
         const xStep = width / (this.visualizer.maxHistory - 1);
 
@@ -1542,34 +1530,27 @@ class KazooApp {
                 ctx.moveTo(x, y);
                 started = true;
             } else {
-                // Smooth curve using quadratic bezier (optional, lineTo is faster/cleaner for dense points)
                 ctx.lineTo(x, y); 
             }
         }
         
-        // Add Glow
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = 'rgba(66, 133, 244, 0.8)';
+        // 移除阴影效果以降低 GPU 开销
         ctx.stroke();
-        ctx.shadowBlur = 0; // Reset
 
-        // 4. Current Pitch Indicator (Right Side)
+        // 4. Current Pitch Indicator (Right Side) - 保留但简化
         const last = history[history.length - 1];
         if (last && last.confidence > 0.1 && last.frequency > 50) {
             const y = this._midiToY(last.midi, height);
             const x = width - 5;
 
-            // Glowing Dot
+            // 简化：移除阴影的圆点
             ctx.beginPath();
             ctx.arc(x, y, 4, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#fff';
             ctx.fill();
-            ctx.shadowBlur = 0;
 
-            // Current Note Label Bubble
-            const noteName = this.ui.currentNote.textContent; // Use existing logic result
+            // Current Note Label Bubble - 保留音符显示
+            const noteName = this.ui.currentNote.textContent;
             ctx.fillStyle = 'rgba(66, 133, 244, 0.9)';
             ctx.beginPath();
             ctx.roundRect(width - 40, y - 10, 35, 20, 4);
@@ -1580,7 +1561,6 @@ class KazooApp {
             ctx.textAlign = 'center';
             ctx.fillText(noteName, width - 22, y);
         }
-        */
     }
 
     resizeVisualizer() {

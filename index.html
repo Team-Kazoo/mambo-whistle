@@ -25,7 +25,6 @@
               'slide-down': 'slideDown 0.6s ease-out',
               'scale-in': 'scaleIn 0.3s ease-out',
               'spin-slow': 'spin 3s linear infinite',
-              'blob': 'blob 20s infinite',
               'shine': 'shine 2s infinite',
             },
             keyframes: {
@@ -48,12 +47,6 @@
               scaleIn: {
                 '0%': { transform: 'scale(0.9)', opacity: '0' },
                 '100%': { transform: 'scale(1)', opacity: '1' },
-              },
-              blob: {
-                '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                '100%': { transform: 'translate(0px, 0px) scale(1)' }
               },
               shine: {
                 '0%': { transform: 'translateX(-100%)' },
@@ -78,19 +71,19 @@
         
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
-            /* 玻璃拟态优化 - 减少 blur 降低 GPU 负载 */
+        /* 玻璃拟态优化 - 减少 blur 降低 GPU 负载 */
         .glass {
-            background: #ffffff; /* replaced rgba + blur */
-            /* backdrop-filter: blur(10px); */
-            /* -webkit-backdrop-filter: blur(10px); */
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.80);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
-        /* 强制硬件加速，解决闪烁问题 - 移除以减少内存占用 */
-        /* .gpu-accelerated {
+        /* 强制硬件加速，解决闪烁问题 */
+        .gpu-accelerated {
             transform: translateZ(0);
             will-change: transform;
-        } */
+        }
 
         /* === Google 边框修复核心代码 === */
         .instrument-btn {
@@ -100,11 +93,11 @@
 
         .card-inner {
             position: relative;
-            background: #ffffff;
-            /* backdrop-filter: blur(6px); */
-            /* transition: all 0.3s ease; */
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(6px);
+            transition: all 0.3s ease;
             z-index: 10;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.5);
         }
 
         /* 默认状态下隐藏彩色边框 */
@@ -113,11 +106,10 @@
             inset: -3px; /* 边框宽度 */
             border-radius: 26px; /* 比内部圆角大一点 */
             background: linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853);
-            /* background-size: 300% 300%; */
             z-index: 0; /* 在卡片下面 */
             opacity: 0;
-            /* transition: opacity 0.3s ease; */
-            /* animation: borderRotate 4s linear infinite; */
+            transition: opacity 0.3s ease;
+            /* 移除旋转动画以降低 GPU 开销 */
         }
 
         /* 激活状态：显示边框，卡片变白 */
@@ -128,22 +120,10 @@
         .instrument-btn.active .card-inner {
             background: #FFFFFF; /* 选中时卡片变实心白，对比度更高 */
             border-color: transparent;
-            /* transform: scale(0.98); */ /* 轻微按压感 */
+            transform: scale(0.98); /* 轻微按压感 */
         }
 
-        /* @keyframes borderRotate {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        } */
-
-        /* Animation delay utilities */
-        /* .animation-delay-2000 {
-            animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-            animation-delay: 4s;
-        } */
+        /* Animation delay utilities - 已移除，不再需要 */
 
         /* 开关样式 - Apple 标准尺寸 */
         .toggle-switch {
@@ -158,7 +138,7 @@
             cursor: pointer;
             top: 0; left: 0; right: 0; bottom: 0;
             background-color: #e5e5e7;
-            /* transition: .4s cubic-bezier(0.4, 0, 0.2, 1); */
+            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 31px;
         }
         .toggle-slider:before {
@@ -169,7 +149,7 @@
             left: 2px;
             bottom: 2px;
             background-color: white;
-            /* transition: .4s cubic-bezier(0.4, 0, 0.2, 1); */
+            transition: .4s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 50%;
             box-shadow: 0 3px 8px rgba(0,0,0,0.15), 0 1px 1px rgba(0,0,0,0.16);
         }
@@ -186,13 +166,9 @@
 </head>
 <body class="bg-[#F5F5F7] text-[#1D1D1F] min-h-screen relative">
 
-    <!-- 背景：优化 blur 减少 GPU 负载 -->
+    <!-- 背景：静态背景，无动画 -->
     <div class="fixed inset-0 z-0 pointer-events-none">
-        <!-- Reduced GPU usage: Removed animated blobs -->
-        <!-- <div class="absolute top-[-10%] left-[10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob gpu-accelerated"></div> -->
-        <!-- <div class="absolute top-[-10%] right-[10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob animation-delay-2000 gpu-accelerated"></div> -->
-        <!-- <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob animation-delay-4000 gpu-accelerated"></div> -->
-        <div class="absolute inset-0 bg-white"></div>
+        <div class="absolute inset-0 bg-white/50"></div>
     </div>
 
     <!-- 导航栏 -->
@@ -774,9 +750,9 @@
             <div id="statusBar" class="hidden"></div>
 
             <!-- Visualizer -->
-            <div id="visualizer" class="hidden mb-16">
+            <div id="visualizer" class="hidden mb-16 fade-up">
                 <div class="bg-[#161617] rounded-[32px] p-8 md:p-10 shadow-2xl relative overflow-hidden border border-white/10">
-                    <!-- <div class="absolute top-[-50%] left-[-10%] w-[80%] h-[200%] bg-gradient-to-r from-blue-500/15 via-purple-500/8 to-transparent rotate-12 blur-2xl pointer-events-none gpu-accelerated"></div> -->
+                    <div class="absolute top-[-50%] left-[-10%] w-[80%] h-[200%] bg-gradient-to-r from-blue-500/15 via-purple-500/8 to-transparent rotate-12 blur-2xl pointer-events-none gpu-accelerated"></div>
 
                     <div class="relative z-10 flex flex-col md:flex-row gap-8 items-center">
                         <div class="text-center md:text-left min-w-[140px]">
