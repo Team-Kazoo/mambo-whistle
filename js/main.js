@@ -609,20 +609,32 @@ class KazooApp {
         try {
             let { inputs, outputs } = await tempAudioIO.enumerateDevices();
 
-            // Check if labels are missing (Permission issue)
+            // Check if labels are missing
             const hasEmptyLabels = inputs.some(d => !d.label) || outputs.some(d => !d.label);
             
             if (hasEmptyLabels) {
-                console.warn('[Main] Device labels missing. Requesting temporary permission...');
-                // Visual feedback
-                if (this.ui.refreshDevicesBtn) {
-                    const btnText = this.ui.refreshDevicesBtn.innerText;
-                    this.ui.refreshDevicesBtn.innerText = 'Requesting Permission...';
+                console.warn('[Main] Device labels missing.');
+                
+                if (this.isRunning && this.audioIO && this.audioIO.stream) {
+                    // Case A: App is running, so we HAVE permission. 
+                    // Chrome sometimes needs a moment after getUserMedia to populate labels.
+                    console.log('[Main] App is running, retrying enumeration in 500ms...');
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const retry = await tempAudioIO.enumerateDevices();
+                    inputs = retry.inputs;
+                    outputs = retry.outputs;
+                } else {
+                    // Case B: App is stopped. We need to ask for permission.
+                    console.log('[Main] App is stopped, requesting temporary permission...');
+                    
+                    // Visual feedback
+                    const originalText = this.ui.refreshDevicesBtn ? this.ui.refreshDevicesBtn.innerText : '';
+                    if (this.ui.refreshDevicesBtn) this.ui.refreshDevicesBtn.innerText = 'Requesting Permission...';
                     
                     try {
                         // Request explicit permission
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        // Stop immediate - just needed permission
+                        // Stop immediately
                         stream.getTracks().forEach(t => t.stop());
                         
                         // Re-enumerate
@@ -632,9 +644,9 @@ class KazooApp {
                         console.log('[Main] Permissions granted. Devices refreshed.');
                     } catch (err) {
                         console.error('[Main] Permission request failed:', err);
-                        alert('Microphone permission is required to see device names.');
+                        // Don't alert here to avoid spamming the user if they denied it
                     } finally {
-                        this.ui.refreshDevicesBtn.innerText = btnText;
+                        if (this.ui.refreshDevicesBtn) this.ui.refreshDevicesBtn.innerText = originalText;
                     }
                 }
             }
@@ -642,12 +654,19 @@ class KazooApp {
             // Populate Inputs
             if (this.ui.audioInputSelect) {
                 const currentVal = this.ui.audioInputSelect.value;
-                this.ui.audioInputSelect.innerHTML = '<option value="default">Default Microphone</option>';
+                // Clear
+                this.ui.audioInputSelect.innerHTML = '';
+                
+                // Add Default
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = 'default';
+                defaultOpt.textContent = 'Default Microphone';
+                this.ui.audioInputSelect.appendChild(defaultOpt);
                 
                 inputs.forEach((device, index) => {
                     const option = document.createElement('option');
                     option.value = device.deviceId;
-                    option.textContent = device.label || `Microphone ${index + 1} (Label unavailable)`;
+                    option.textContent = device.label || `Microphone ${index + 1}`;
                     this.ui.audioInputSelect.appendChild(option);
                 });
 
@@ -660,12 +679,17 @@ class KazooApp {
             // Populate Outputs
             if (this.ui.audioOutputSelect) {
                 const currentVal = this.ui.audioOutputSelect.value;
-                this.ui.audioOutputSelect.innerHTML = '<option value="default">Default Output</option>';
+                this.ui.audioOutputSelect.innerHTML = '';
+                
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = 'default';
+                defaultOpt.textContent = 'Default Output';
+                this.ui.audioOutputSelect.appendChild(defaultOpt);
                 
                 outputs.forEach((device, index) => {
                     const option = document.createElement('option');
                     option.value = device.deviceId;
-                    option.textContent = device.label || `Speaker ${index + 1} (Label unavailable)`;
+                    option.textContent = device.label || `Speaker ${index + 1}`;
                     this.ui.audioOutputSelect.appendChild(option);
                 });
 
