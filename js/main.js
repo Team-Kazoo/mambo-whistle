@@ -951,69 +951,120 @@ class KazooApp {
      * Start Playback
      * Uses AudioIO (or audioInputManager fallback - deprecated)
      */
+    /**
+     * Capture device selection from UI before starting
+     * @private
+     */
+    _captureDeviceSelection() {
+        if (this.ui.audioInputSelect?.value) {
+            this.selectedInputId = this.ui.audioInputSelect.value;
+        }
+        if (this.ui.audioOutputSelect?.value) {
+            this.selectedOutputId = this.ui.audioOutputSelect.value;
+        }
+
+        console.log('[Main] Starting with devices:', {
+            input: this.selectedInputId,
+            output: this.selectedOutputId
+        });
+    }
+
+    /**
+     * Initialize audio system and start processing
+     * @returns {Promise<Object>} Audio system info
+     * @private
+     */
+    async _initializeAudioSystem() {
+        const audioStartInfo = await this._startWithAudioIO();
+        this._captureActiveDeviceState();
+        this.isRunning = true;
+
+        if (this.audioLoopController) {
+            this.audioLoopController.start();
+        }
+
+        return audioStartInfo;
+    }
+
+    /**
+     * Update UI elements after successful start
+     * @private
+     */
+    _updateUIForStarted() {
+        // Toggle visibility
+        if (this.ui.startBtn) this.ui.startBtn.classList.add('hidden');
+        if (this.ui.stopBtn) this.ui.stopBtn.classList.remove('hidden');
+        if (this.ui.statusBar) this.ui.statusBar.classList.remove('hidden');
+        if (this.ui.visualizer) this.ui.visualizer.classList.remove('hidden');
+
+        // Force visualizer resize to prevent blank canvas
+        requestAnimationFrame(() => {
+            if (this.visualizerManager) {
+                this.visualizerManager.resize();
+                console.log('[Main] ✓ Visualizer resized after showing');
+            }
+        });
+
+        // Update status text
+        this._updateStatusText();
+    }
+
+    /**
+     * Update status text elements
+     * @private
+     */
+    _updateStatusText() {
+        const mode = this.useContinuousMode ? 'Continuous' : 'Legacy';
+
+        if (this.ui.systemStatus) {
+            this.ui.systemStatus.textContent = `Running (${mode})`;
+            this.ui.systemStatus.classList.add('active');
+        }
+
+        if (this.ui.recordingStatus) {
+            this.ui.recordingStatus.textContent = 'Playing';
+            this.ui.recordingStatus.classList.add('status-ready');
+        }
+
+        if (this.ui.recordingHelper) {
+            this.ui.recordingHelper.textContent = 'Hum or sing to hear your voice transformed!';
+        }
+    }
+
+    /**
+     * Handle startup errors and reset UI
+     * @param {Error} error - The error that occurred
+     * @private
+     */
+    _handleStartupError(error) {
+        console.error('Failed to start:', error);
+
+        // Show user-friendly error
+        this._showError(error.message || 'Startup failed. Check microphone permissions and browser compatibility.');
+
+        // Reset UI state
+        if (this.ui.startBtn) this.ui.startBtn.classList.remove('hidden');
+        if (this.ui.stopBtn) this.ui.stopBtn.classList.add('hidden');
+
+        if (this.ui.recordingStatus) {
+            this.ui.recordingStatus.textContent = 'Error';
+            this.ui.recordingStatus.classList.remove('status-ready');
+            this.ui.recordingStatus.classList.add('status-error');
+        }
+    }
+
     async start() {
         try {
             console.log(`Starting Kazoo Proto in ${this.useContinuousMode ? 'Continuous' : 'Legacy'} mode...`);
 
-            // 🔥 [CRITICAL FIX] Force sync device selection from UI before starting
-            // This handles cases where the user changed selection *before* clicking Start
-            if (this.ui.audioInputSelect && this.ui.audioInputSelect.value) {
-                this.selectedInputId = this.ui.audioInputSelect.value;
-            }
-            if (this.ui.audioOutputSelect && this.ui.audioOutputSelect.value) {
-                this.selectedOutputId = this.ui.audioOutputSelect.value;
-            }
-            
-            console.log('[Main] Starting with devices:', {
-                input: this.selectedInputId,
-                output: this.selectedOutputId
-            });
-
-            // Start Audio System (AudioIO only)
-            const audioStartInfo = await this._startWithAudioIO();
-            this._captureActiveDeviceState();
-
-            // Update UI
-            this.isRunning = true;
-            if (this.audioLoopController) this.audioLoopController.start();
-
-            // Safely update UI elements (check for null)
-            if (this.ui.startBtn) this.ui.startBtn.classList.add('hidden');
-            if (this.ui.stopBtn) this.ui.stopBtn.classList.remove('hidden');
-            if (this.ui.statusBar) this.ui.statusBar.classList.remove('hidden');
-            if (this.ui.visualizer) this.ui.visualizer.classList.remove('hidden');
-
-            // 🔥 [UX FIX] Force visualizer resize to prevent blank canvas on show
-            // Canvas size is 0 when initialized in display:none state
-            requestAnimationFrame(() => {
-                if (this.visualizerManager) {
-                    this.visualizerManager.resize();
-                    console.log('[Main] ✓ Visualizer resized after showing');
-                }
-            });
-
-            this.ui.systemStatus.textContent = `Running (${this.useContinuousMode ? 'Continuous' : 'Legacy'})`;
-            this.ui.systemStatus.classList.add('active');
-            this.ui.recordingStatus.textContent = 'Playing';
-            this.ui.recordingStatus.classList.add('status-ready');
-            this.ui.recordingHelper.textContent = 'Hum or sing to hear your voice transformed!';
+            this._captureDeviceSelection();
+            await this._initializeAudioSystem();
+            this._updateUIForStarted();
 
             console.log('✓ Kazoo Proto is running!');
 
         } catch (error) {
-            console.error('Failed to start:', error);
-
-            // Show user-friendly error message
-            this._showError(error.message || 'Startup failed. Check microphone permissions and browser compatibility.');
-
-            // Reset UI state (with null checks)
-            if (this.ui.startBtn) this.ui.startBtn.classList.remove('hidden');
-            if (this.ui.stopBtn) this.ui.stopBtn.classList.add('hidden');
-            if (this.ui.recordingStatus) {
-                this.ui.recordingStatus.textContent = 'Error';
-                this.ui.recordingStatus.classList.remove('status-ready');
-                this.ui.recordingStatus.classList.add('status-error');
-            }
+            this._handleStartupError(error);
         }
     }
 
