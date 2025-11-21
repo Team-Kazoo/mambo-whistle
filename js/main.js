@@ -1197,9 +1197,9 @@ class MamboApp {
         // 4. Update performance monitor (Step 2: Use injected service)
         if (!this.performanceMonitor.metrics.sampleRate) {
             await this.performanceMonitor.initialize(ctx, bufferSize, result.mode);
+        }
 
         return result;
-        }
     }
 
 
@@ -1287,7 +1287,7 @@ class MamboApp {
     /**
      * Stop Playback
      */
-    stop() {
+    async stop() {
         console.log('Stopping Mambo Whistle...');
         this.isRunning = false;
 
