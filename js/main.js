@@ -80,8 +80,7 @@ class MamboApp {
             helpToggle: document.getElementById('helpToggle'),
             helpContent: document.getElementById('helpContent'),
             helpSection: document.getElementById('tipsSection'),
-            warningBox: document.getElementById('warningBox'),
-            warningText: document.getElementById('warningText'),
+            // warningBox, warningText now cached in MamboView
 
             // Mode Toggle
             modeToggle: document.getElementById('modeToggle'),
@@ -100,12 +99,11 @@ class MamboApp {
             // Status Badges
             instrumentStatus: document.getElementById('instrumentStatus'),
             recordingStatus: document.getElementById('recordingStatus'),
-            recordingHelper: document.getElementById('recordingHelper'),
+            // recordingHelper, systemStatus now cached in MamboView
 
             // Status and Visualization
             statusBar: document.getElementById('statusBar'),
             visualizer: document.getElementById('visualizer'),
-            systemStatus: document.getElementById('systemStatus'),
             currentNote: document.getElementById('currentNote'),
             currentFreq: document.getElementById('currentFreq'),
 
@@ -241,8 +239,7 @@ class MamboApp {
         const support = checkBrowserSupport();
 
         if (!support.isSupported) {
-            this.ui.warningBox.classList.remove('hidden');
-            this.ui.warningText.innerHTML = support.issues.map(i => `<li>${i}</li>`).join('');
+            this.view.renderWarning(support.issues);
         }
     }
 
@@ -550,15 +547,15 @@ class MamboApp {
                 // If running, restart to apply new microphone
                 if (this.isRunning && this.audioIO) {
                     console.log('[Main] Restarting audio to apply new input device...');
-                    const originalText = this.ui.systemStatus?.textContent || '';
-                    if (this.ui.systemStatus) this.ui.systemStatus.textContent = 'Switching Mic...';
+                    const originalText = this.view.systemStatus?.textContent || '';
+                    this.view.renderStatusMessage('Switching Mic...');
 
                     try {
                         await this.audioIO.stop();
                         this.audioIO.configure({ inputDeviceId: deviceId });
                         await this.audioIO.start();
                         console.log('[Main] Audio restarted with new input.');
-                        if (this.ui.systemStatus) this.ui.systemStatus.textContent = originalText;
+                        this.view.renderStatusMessage(originalText);
                     } catch (err) {
                         console.error('[Main] Failed to switch input:', err);
                         this._showError('Failed to switch microphone: ' + err.message);
@@ -638,21 +635,20 @@ class MamboApp {
                     
                     // Visual Feedback
                     const originalText = `Running (${state.continuousMode ? 'Continuous' : 'Legacy'})`;
-                    if (this.ui.systemStatus) {
-                        this.ui.systemStatus.textContent = `Auto-Tune: ${isEnabled ? 'ON' : 'OFF'}`;
-                        this.ui.systemStatus.classList.add('highlight');
-                        
-                        console.log(`[Main] 🎹 Auto-Tune toggled ${isEnabled ? 'ON' : 'OFF'} (Strength: ${newStrength})`);
+                    console.log(`[Main] 🎹 Auto-Tune toggled ${isEnabled ? 'ON' : 'OFF'} (Strength: ${newStrength})`);
 
-                        // Revert text after 2s
-                        if (this._statusTimeout) clearTimeout(this._statusTimeout);
-                        this._statusTimeout = setTimeout(() => {
-                            if (this.isRunning && this.ui.systemStatus) {
-                                this.ui.systemStatus.textContent = originalText;
-                            }
-                            if (this.ui.systemStatus) this.ui.systemStatus.classList.remove('highlight');
-                        }, 2000);
-                    }
+                    // Clear previous timeout if exists
+                    if (this._statusTimeout) clearTimeout(this._statusTimeout);
+
+                    // Show temporary status with auto-restore
+                    this._statusTimeout = this.view.renderStatusMessage(
+                        `Auto-Tune: ${isEnabled ? 'ON' : 'OFF'}`,
+                        {
+                            highlight: true,
+                            timeout: 2000,
+                            restoreText: this.isRunning ? originalText : ''
+                        }
+                    );
                 } else {
                     console.log('[Main] ⚠️ Auto-Tune only available in Continuous Mode');
                 }
@@ -816,10 +812,10 @@ class MamboApp {
     }
 
     _updateDeviceHelperText() {
-        if (!this.ui.recordingHelper) return;
-        const mic = this.lastKnownInputLabel || 'System Default';
-        const out = this.lastKnownOutputLabel || 'System Default';
-        this.ui.recordingHelper.textContent = `Mic · ${mic}  |  Output · ${out}`;
+        this.view.renderDeviceHelper(
+            this.lastKnownInputLabel || 'System Default',
+            this.lastKnownOutputLabel || 'System Default'
+        );
     }
 
     /**
@@ -933,17 +929,21 @@ class MamboApp {
     _updateStatusText() {
         const mode = this.useContinuousMode ? 'Continuous' : 'Legacy';
 
+        // Update status and helper via View layer
+        this.view.renderStatusMessage(`Running (${mode})`, { active: true });
+        this.view.renderDeviceHelper(
+            this.lastKnownInputLabel || 'System Default',
+            this.lastKnownOutputLabel || 'System Default'
+        );
+        if (this.view.recordingHelper) {
+            this.view.recordingHelper.textContent = 'Hum or sing to hear your voice transformed!';
+        }
+
+        // Update recording status via SafeUI (non-migrated yet)
         this.safeUI.batchUpdate({
-            systemStatus: {
-                setText: `Running (${mode})`,
-                addClass: 'active'
-            },
             recordingStatus: {
                 setText: 'Playing',
                 addClass: 'status-ready'
-            },
-            recordingHelper: {
-                setText: 'Hum or sing to hear your voice transformed!'
             }
         });
     }
@@ -1214,15 +1214,18 @@ class MamboApp {
             recordingStatus: {
                 setText: 'Standby',
                 removeClass: ['status-ready', 'status-error']
-            },
-            systemStatus: {
-                setText: 'Ready',
-                removeClass: 'active'
-            },
-            recordingHelper: {
-                setText: 'Use headphones. Wired microphones recommended over Bluetooth for best latency.'
             }
         });
+
+        // Reset status messages via View layer
+        this.view.renderStatusMessage('Ready', { active: false });
+        this.view.renderDeviceHelper(
+            this.lastKnownInputLabel || 'System Default',
+            this.lastKnownOutputLabel || 'System Default'
+        );
+        if (this.view.recordingHelper) {
+            this.view.recordingHelper.textContent = 'Use headphones. Wired microphones recommended over Bluetooth for best latency.';
+        }
 
         console.log('Mambo Whistle stopped');
     }
@@ -1286,10 +1289,7 @@ class MamboApp {
         alert(` ${message}`);
 
         // 如果有错误提示框，也在那里显示
-        if (this.ui.warningBox && this.ui.warningText) {
-            this.ui.warningBox.classList.remove('hidden');
-            this.ui.warningText.innerHTML = `<li>${message.replace(/\n/g, '</li><li>')}</li>`;
-        }
+        this.view.renderWarning(message);
     }
 }
 

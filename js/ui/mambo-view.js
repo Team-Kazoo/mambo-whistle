@@ -41,6 +41,12 @@ export class MamboView {
         this.settingsBackdrop = this.doc.getElementById('settingsBackdrop');
         this.settingsPanel = this.doc.getElementById('settingsPanel');
         this.closeSettingsBtn = this.doc.getElementById('closeSettingsBtn');
+
+        // Status Message Elements
+        this.systemStatus = this.doc.getElementById('systemStatus');
+        this.warningBox = this.doc.getElementById('warningBox');
+        this.warningText = this.doc.getElementById('warningText');
+        this.recordingHelper = this.doc.getElementById('recordingHelper');
     }
 
     /**
@@ -528,5 +534,86 @@ export class MamboView {
                 this.settingsModal.classList.add('hidden');
             }, 300);
         }
+    }
+
+    /**
+     * Render System Status Message
+     * @param {string} text - Status text to display
+     * @param {object} [options] - Rendering options
+     * @param {boolean} [options.highlight] - Add highlight class
+     * @param {boolean} [options.active] - Add active class
+     * @param {number} [options.timeout] - Auto-clear after milliseconds
+     * @returns {Function|null} Cleanup function to cancel timeout, or null
+     */
+    renderStatusMessage(text, options = {}) {
+        if (!this.systemStatus) return null;
+
+        this.systemStatus.textContent = text;
+
+        // Apply classes
+        if (options.highlight) {
+            this.systemStatus.classList.add('highlight');
+        } else {
+            this.systemStatus.classList.remove('highlight');
+        }
+
+        if (options.active !== undefined) {
+            if (options.active) {
+                this.systemStatus.classList.add('active');
+            } else {
+                this.systemStatus.classList.remove('active');
+            }
+        }
+
+        // Handle timeout
+        if (options.timeout) {
+            const timeoutId = setTimeout(() => {
+                if (options.restoreText) {
+                    this.systemStatus.textContent = options.restoreText;
+                }
+                this.systemStatus.classList.remove('highlight');
+            }, options.timeout);
+
+            // Return cleanup function
+            return () => clearTimeout(timeoutId);
+        }
+
+        return null;
+    }
+
+    /**
+     * Render Warning Message
+     * @param {string[]|string} messages - Warning messages (array or newline-separated string)
+     * @param {boolean} show - Whether to show or hide warning box
+     */
+    renderWarning(messages, show = true) {
+        if (!this.warningBox || !this.warningText) return;
+
+        if (!show) {
+            this.warningBox.classList.add('hidden');
+            return;
+        }
+
+        // Convert to array if string
+        const messageArray = Array.isArray(messages)
+            ? messages
+            : messages.split('\n').filter(m => m.trim());
+
+        // Render as list
+        this.warningText.innerHTML = messageArray.map(m => `<li>${m}</li>`).join('');
+        this.warningBox.classList.remove('hidden');
+    }
+
+    /**
+     * Render Device Helper Text
+     * @param {string} inputLabel - Input device label
+     * @param {string} outputLabel - Output device label
+     */
+    renderDeviceHelper(inputLabel, outputLabel) {
+        if (!this.recordingHelper) return;
+
+        const mic = inputLabel || 'System Default';
+        const out = outputLabel || 'System Default';
+        this.recordingHelper.textContent = `Mic · ${mic}  |  Output · ${out}`;
     }
 }
