@@ -19,6 +19,7 @@ import { VisualizerManager } from './managers/visualizer-manager.js'; // Import 
 import { SynthManager } from './managers/synth-manager.js'; // Import SynthManager
 import { AudioLoopController } from './core/audio-loop-controller.js'; // Import AudioLoopController
 import { TIMING_CONSTANTS } from './config/constants.js';
+import { store } from './state/store.js'; // Import StateStore singleton
 
 class KazooApp {
     /**
@@ -35,6 +36,7 @@ class KazooApp {
      * @param {Object} services.visualizerManager - Visualizer manager module
      * @param {Object} services.synthManager - Synth manager (bridge to engines)
      * @param {Object} services.audioLoopController - Audio loop controller
+     * @param {Object} services.store - State store (centralized state management)
      */
     constructor(services = {}) {
         this.isRunning = false;
@@ -51,6 +53,7 @@ class KazooApp {
         this.visualizerManager = services.visualizerManager || null;
         this.synthManager = services.synthManager || null; // Injected SynthManager
         this.audioLoopController = services.audioLoopController || null; // Injected Controller
+        this.store = services.store || null; // Injected State Store
 
         // Audio System
         // AudioIO is the only supported audio system (AudioWorklet + ScriptProcessor fallback)
@@ -1326,7 +1329,12 @@ container.register('instrumentPresetManager', () => instrumentPresetManager, {
     singleton: true
 });
 
-// 4. 表现力特征提取模块 (Stage2: 直接使用 import)
+// 4. State Store (Centralized state management)
+container.register('store', () => store, {
+    singleton: true
+});
+
+// 5. 表现力特征提取模块 (Stage2: 直接使用 import)
 container.register('ExpressiveFeatures', () => ExpressiveFeatures, {
     singleton: true
 });
@@ -1442,7 +1450,8 @@ container.register('app', (c) => {
                     aiHarmonizer: c.get('aiHarmonizer'),
                     visualizerManager: c.get('visualizerManager'),
                     synthManager: c.get('synthManager'), // Inject SynthManager
-                    audioLoopController: c.get('audioLoopController') // Inject AudioLoopController
+                    audioLoopController: c.get('audioLoopController'), // Inject AudioLoopController
+                    store: c.get('store') // Inject State Store
                 };
 
                 console.log('[Container]  服务已注入:', Object.keys(services));
@@ -1451,7 +1460,7 @@ container.register('app', (c) => {
                 singleton: true,
                 dependencies: ['config', 'configManager', 'pitchDetector', 'performanceMonitor',
                                'synthesizerEngine', 'continuousSynthEngine', 'ExpressiveFeatures',
-                               'aiHarmonizer', 'visualizerManager', 'synthManager', 'audioLoopController']
+                               'aiHarmonizer', 'visualizerManager', 'synthManager', 'audioLoopController', 'store']
             });// =============================================================================
 // 全局暴露 (仅保留应用入口和容器调试接口)
 // =============================================================================
