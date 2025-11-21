@@ -692,4 +692,75 @@ export class MamboView {
             this.speedControl.style.pointerEvents = pointerEvents;
         }
     }
+
+    /**
+     * Render Segmented Control State
+     * @param {HTMLElement} container - Container element with buttons
+     * @param {string|number} selectedValue - Value to mark as active
+     */
+    renderSegmentedControl(container, selectedValue) {
+        if (!container) return;
+
+        const buttons = container.querySelectorAll('button');
+        const activeClass = ['bg-white', 'shadow-md', 'text-blue-600', 'font-bold', 'ring-1', 'ring-black/5'];
+        const inactiveClass = ['text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-200/50'];
+
+        buttons.forEach(btn => {
+            if (btn.dataset.value === String(selectedValue)) {
+                btn.classList.add(...activeClass);
+                btn.classList.remove(...inactiveClass);
+            } else {
+                btn.classList.remove(...activeClass);
+                btn.classList.add(...inactiveClass);
+            }
+        });
+    }
+
+    /**
+     * Get selected device label from select element
+     * @param {'input'|'output'} type - Device type
+     * @returns {string} Selected device label or fallback
+     */
+    getSelectedDeviceLabel(type) {
+        const selectEl = type === 'input' ? this.audioInputSelect : this.audioOutputSelect;
+        const fallback = type === 'input' ? 'Custom Microphone' : 'Custom Output';
+
+        if (!selectEl || !selectEl.selectedOptions[0]) {
+            return fallback;
+        }
+
+        return selectEl.selectedOptions[0].textContent || fallback;
+    }
+
+    /**
+     * Sync select element value, creating ghost option if needed
+     * @param {HTMLSelectElement} selectEl - The select element
+     * @param {string} deviceId - Device ID to set
+     * @param {string} [fallbackLabel] - Label for ghost option
+     */
+    syncSelectValue(selectEl, deviceId, fallbackLabel) {
+        if (!selectEl || !deviceId) return;
+
+        const options = [...selectEl.options];
+        if (!options.some(o => o.value === deviceId)) {
+            const option = this.doc.createElement('option');
+            option.value = deviceId;
+            option.textContent = fallbackLabel || 'Active Device';
+            selectEl.appendChild(option);
+        }
+        selectEl.value = deviceId;
+    }
+
+    /**
+     * Find device ID by label text
+     * @param {HTMLSelectElement} selectEl - The select element
+     * @param {string} label - Label to search for
+     * @returns {string|null} Device ID or null
+     */
+    findDeviceIdByLabel(selectEl, label) {
+        if (!selectEl || !label) return null;
+
+        const option = [...selectEl.options].find(o => o.textContent === label);
+        return option ? option.value : null;
+    }
 }

@@ -391,27 +391,16 @@ class MamboApp {
             });
         }
 
-        // Helper for Segmented Controls
+        // Helper for Segmented Controls (State-Driven)
         const setupSegmentedControl = (containerId, onSelect, defaultValue) => {
             const container = document.getElementById(containerId);
             if (!container) return;
 
             const buttons = container.querySelectorAll('button');
-            // Enhanced Active State: White bg, Blue text, Bold, Shadow, Ring border
-            const activeClass = ['bg-white', 'shadow-md', 'text-blue-600', 'font-bold', 'ring-1', 'ring-black/5'];
-            // Enhanced Inactive State: Gray text, subtle hover
-            const inactiveClass = ['text-gray-500', 'hover:text-gray-700', 'hover:bg-gray-200/50'];
 
             const updateState = (selectedVal) => {
-                buttons.forEach(btn => {
-                    if (btn.dataset.value === String(selectedVal)) {
-                        btn.classList.add(...activeClass);
-                        btn.classList.remove(...inactiveClass);
-                    } else {
-                        btn.classList.remove(...activeClass);
-                        btn.classList.add(...inactiveClass);
-                    }
-                });
+                // Delegate rendering to View layer
+                this.view.renderSegmentedControl(container, selectedVal);
                 onSelect(parseFloat(selectedVal));
             };
 
@@ -422,7 +411,7 @@ class MamboApp {
                     // Also toggle Main Switch if user interacts with controls
                     if (this.ui.autoTuneToggle && !this.ui.autoTuneToggle.checked) {
                         this.ui.autoTuneToggle.checked = true;
-                        this._updateAutoTuneState(); 
+                        this._updateAutoTuneState();
                     }
                 });
             });
@@ -535,7 +524,7 @@ class MamboApp {
         // 1. Bind UI Events -> Controller Actions
         this.view.bindDeviceSelectUI({
             onInputDeviceChange: async (deviceId) => {
-                const selectedLabel = this.ui.audioInputSelect?.selectedOptions[0]?.textContent || 'Custom Microphone';
+                const selectedLabel = this.view.getSelectedDeviceLabel('input');
 
                 this.selectedInputId = deviceId;
                 this.lastKnownInputLabel = selectedLabel;
@@ -564,7 +553,7 @@ class MamboApp {
             },
 
             onOutputDeviceChange: async (deviceId) => {
-                const selectedLabel = this.ui.audioOutputSelect?.selectedOptions[0]?.textContent || 'Custom Output';
+                const selectedLabel = this.view.getSelectedDeviceLabel('output');
 
                 this.selectedOutputId = deviceId;
                 this.lastKnownOutputLabel = selectedLabel;
@@ -755,11 +744,9 @@ class MamboApp {
         }
 
         if (this.ui.audioOutputSelect) {
-            const selectedOption = this.ui.audioOutputSelect.selectedOptions[0];
-            if (selectedOption) {
-                this.lastKnownOutputLabel = selectedOption.textContent;
-                this._persistDevicePreference('output', this.selectedOutputId || 'default', selectedOption.textContent);
-            }
+            const label = this.view.getSelectedDeviceLabel('output');
+            this.lastKnownOutputLabel = label;
+            this._persistDevicePreference('output', this.selectedOutputId || 'default', label);
         }
 
         this._updateDeviceHelperText();
@@ -794,21 +781,11 @@ class MamboApp {
     }
 
     _syncSelectValue(selectEl, deviceId, fallbackLabel) {
-        if (!selectEl || !deviceId) return;
-        const options = [...selectEl.options];
-        if (!options.some(o => o.value === deviceId)) {
-            const option = document.createElement('option');
-            option.value = deviceId;
-            option.textContent = fallbackLabel || 'Active Device';
-            selectEl.appendChild(option);
-        }
-        selectEl.value = deviceId;
+        this.view.syncSelectValue(selectEl, deviceId, fallbackLabel);
     }
 
     _findDeviceIdByLabel(selectEl, label) {
-        if (!selectEl || !label) return null;
-        const option = [...selectEl.options].find(o => o.textContent === label);
-        return option ? option.value : null;
+        return this.view.findDeviceIdByLabel(selectEl, label);
     }
 
     _updateDeviceHelperText() {
