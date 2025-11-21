@@ -2,6 +2,8 @@
  * @fileoverview Liquid Visualizer - High-performance Pitch Visualization
  * Renders a glowing, fluid line chart representing pitch history in real-time.
  * Optimized for 60fps rendering using requestAnimationFrame.
+ * 
+ * Updated: Added Full Session Export (Piano Roll Style)
  */
 
 export class VisualizerManager {
@@ -15,7 +17,7 @@ export class VisualizerManager {
         this.config = {
             minMidi: 36, // C2
             maxMidi: 84, // C6
-            historySize: 300, // Number of points to keep
+            historySize: 300, // Number of points to keep for live view
             lineColor: '#60A5FA', // Blue-400
             glowColor: '#3B82F6', // Blue-500
             lineWidth: 3,
@@ -24,8 +26,13 @@ export class VisualizerManager {
             ...config
         };
 
-        // State
-        this.points = []; // Ring buffer for drawing { y, confidence, timestamp }
+        // Live View State (Ring Buffer)
+        this.points = []; 
+        
+        // Session State (Full History for Export)
+        this.fullSessionData = []; 
+        this.startTime = 0;
+
         this.isRunning = false;
         this.animationId = null;
         
@@ -39,6 +46,9 @@ export class VisualizerManager {
 
     init() {
         this.isRunning = true;
+        this.points = [];
+        this.fullSessionData = [];
+        this.startTime = performance.now() / 1000;
         this._loop();
     }
 
@@ -51,30 +61,37 @@ export class VisualizerManager {
 
         const { frequency, confidence } = pitchFrame;
         
+        // --- 1. Live View Logic (Ring Buffer) ---
         // Convert Freq to Y position (normalized 0-1)
-        // Y = 1 means bottom (low pitch), Y = 0 means top (high pitch)
-        let normalizedY = 0.5; // Default to center if silent
+        let normalizedY = 0.5; 
         let valid = false;
+        let midi = null;
 
         if (frequency && confidence > 0.1) {
-            const midi = 69 + 12 * Math.log2(frequency / 440);
+            midi = 69 + 12 * Math.log2(frequency / 440);
             // Map MIDI range to 0-1 (inverted for Canvas)
             normalizedY = 1 - (midi - this.config.minMidi) / (this.config.maxMidi - this.config.minMidi);
             normalizedY = Math.max(0, Math.min(1, normalizedY)); // Clamp
             valid = true;
         }
 
-        // Push to buffer
         this.points.push({
             y: normalizedY,
             valid: valid,
             confidence: confidence
         });
 
-        // Keep buffer size constant
         if (this.points.length > this.config.historySize) {
             this.points.shift();
         }
+
+        // --- 2. Session Recording Logic (Full History) ---
+        const now = performance.now() / 1000;
+        this.fullSessionData.push({
+            t: now - this.startTime, // Relative time
+            m: midi, // Raw MIDI value (float) or null
+            c: confidence
+        });
     }
 
     resize() {
@@ -108,8 +125,6 @@ export class VisualizerManager {
         if (!ctx || !width || !height) return;
 
         // 1. Clear & Fade Effect (Trail)
-        // Instead of clearRect, we fill with semi-transparent bg to create trails if desired
-        // But for a clean look, clearRect is better.
         ctx.clearRect(0, 0, width, height);
 
         // 2. Draw Grid (Background)
@@ -131,7 +146,6 @@ export class VisualizerManager {
         let hasStarted = false;
 
         // We draw from right (newest) to left (oldest)
-        // x = width corresponds to points[points.length-1]
         const stepX = width / (this.config.historySize - 1);
 
         for (let i = 0; i < points.length; i++) {
@@ -145,18 +159,17 @@ export class VisualizerManager {
                     hasStarted = true;
                 } else {
                     // Smooth curve (Quadratic Bezier)
-                    // Use midpoint between current and previous for smoother curves
                     const prevPoint = points[i - 1];
                     if (prevPoint && prevPoint.valid) {
                         const xc = (x + (i - 1) * stepX) / 2;
                         const yc = (y + prevPoint.y * height) / 2;
                         ctx.quadraticCurveTo(xc, yc, x, y);
                     } else {
-                        ctx.moveTo(x, y); // Jump over gap
+                        ctx.moveTo(x, y);
                     }
                 }
             } else {
-                hasStarted = false; // Break line on silence
+                hasStarted = false;
             }
         }
         ctx.stroke();
@@ -164,20 +177,18 @@ export class VisualizerManager {
         // Reset shadow for other elements
         ctx.shadowBlur = 0;
 
-        // 4. Draw Current Note Indicator (Right side)
+        // 4. Draw Current Note Indicator
         const lastPoint = points[points.length - 1];
         if (lastPoint && lastPoint.valid) {
             const y = lastPoint.y * height;
             
-            // Pulsing Dot
             ctx.beginPath();
             ctx.fillStyle = '#FFFFFF';
             ctx.arc(width - 10, y, 4, 0, Math.PI * 2);
             ctx.fill();
             
-            // Glow ring
             ctx.beginPath();
-            ctx.fillStyle = `rgba(96, 165, 250, ${lastPoint.confidence})`; // Opacity based on confidence
+            ctx.fillStyle = `rgba(96, 165, 250, ${lastPoint.confidence})`;
             ctx.arc(width - 10, y, 10, 0, Math.PI * 2);
             ctx.fill();
         }
@@ -188,12 +199,8 @@ export class VisualizerManager {
         ctx.font = '10px -apple-system, BlinkMacSystemFont, sans-serif';
         ctx.fillStyle = this.config.textColor;
         
-        // C notes
-        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        
         for (let midi = this.config.minMidi; midi <= this.config.maxMidi; midi++) {
-            // Only draw C notes lines
-            if (midi % 12 === 0) {
+            if (midi % 12 === 0) { // C notes
                 const normalizedY = 1 - (midi - this.config.minMidi) / (this.config.maxMidi - this.config.minMidi);
                 const y = normalizedY * height;
                 
@@ -203,11 +210,111 @@ export class VisualizerManager {
                 ctx.lineTo(width, y);
                 ctx.stroke();
 
-                // Label
                 const octave = Math.floor(midi / 12) - 1;
                 ctx.fillText(`C${octave}`, 5, y - 4);
             }
         }
+    }
+
+    /**
+     * Export the full session as a high-resolution Piano Roll image
+     */
+    exportSessionImage() {
+        if (this.fullSessionData.length === 0) {
+            alert("No data to export. Start the engine and make some noise first!");
+            return;
+        }
+
+        console.log(`[Visualizer] Exporting session: ${this.fullSessionData.length} points`);
+
+        // 1. Configure Export Dimensions
+        const duration = this.fullSessionData[this.fullSessionData.length - 1].t;
+        const width = Math.max(1200, Math.ceil(duration * 50)); // 50 pixels per second
+        const height = 1080;
+        const keyHeight = 15;
+
+        // 2. Create Offscreen Canvas
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = width;
+        offCanvas.height = height;
+        const ctx = offCanvas.getContext('2d');
+
+        // 3. Draw Background (Dark)
+        ctx.fillStyle = '#121212';
+        ctx.fillRect(0, 0, width, height);
+
+        // 4. Draw Piano Roll Grid (Black/White Keys)
+        // Auto-center the pitch range
+        let sumMidi = 0, count = 0;
+        this.fullSessionData.forEach(p => { if(p.m) { sumMidi += p.m; count++; }});
+        const avgMidi = count > 0 ? sumMidi / count : 60; // Default C4
+        const centerY = height / 2;
+
+        // Draw Grid Rows
+        const visibleKeysHalf = (height / 2) / keyHeight;
+        const minVisMidi = Math.floor(avgMidi - visibleKeysHalf);
+        const maxVisMidi = Math.ceil(avgMidi + visibleKeysHalf);
+
+        ctx.font = '12px sans-serif';
+        ctx.textBaseline = 'middle';
+
+        for (let m = minVisMidi; m <= maxVisMidi; m++) {
+            const y = centerY + (avgMidi - m) * keyHeight;
+            const isWhite = [0, 2, 4, 5, 7, 9, 11].includes(m % 12);
+            
+            // Row Background
+            ctx.fillStyle = isWhite ? '#1E1E1E' : '#121212';
+            ctx.fillRect(0, y - keyHeight/2, width, keyHeight);
+
+            // Octave Line
+            if (m % 12 === 0) {
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#666';
+                ctx.fillText(`C${Math.floor(m/12)-1}`, 10, y);
+            }
+        }
+
+        // 5. Draw Pitch Curve
+        ctx.beginPath();
+        ctx.strokeStyle = '#60A5FA'; // Mambo Blue
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        
+        // Glow
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#3B82F6';
+
+        let isDrawing = false;
+        this.fullSessionData.forEach(p => {
+            const x = p.t * 50; // Match width scale
+            
+            if (p.m !== null) {
+                const y = centerY + (avgMidi - p.m) * keyHeight;
+                
+                if (!isDrawing) {
+                    ctx.moveTo(x, y);
+                    isDrawing = true;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            } else {
+                isDrawing = false; // Gap on silence
+            }
+        });
+        ctx.stroke();
+
+        // 6. Download
+        const link = document.createElement('a');
+        link.download = `mambo-session-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+        link.href = offCanvas.toDataURL('image/png');
+        link.click();
     }
 
     destroy() {

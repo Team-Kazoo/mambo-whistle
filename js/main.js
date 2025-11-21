@@ -108,6 +108,9 @@ class MamboApp {
             // Visualizer-specific metrics (inside canvas panel)
             visualizerLatency: document.getElementById('visualizerLatency'),
             visualizerConfidence: document.getElementById('visualizerConfidence'),
+            
+            // Export Button
+            exportBtn: document.getElementById('exportBtn'),
 
             // Instrument Buttons
             instrumentBtns: document.querySelectorAll('.instrument-btn'),
@@ -265,6 +268,15 @@ class MamboApp {
         // Start/Stop - Note: UIManager also binds these, check for double triggers
         this.ui.startBtn.addEventListener('click', () => this.start());
         this.ui.stopBtn.addEventListener('click', () => this.stop());
+
+        // Export Session
+        if (this.ui.exportBtn) {
+            this.ui.exportBtn.addEventListener('click', () => {
+                if (this.visualizerManager) {
+                    this.visualizerManager.exportSessionImage();
+                }
+            });
+        }
 
         // UI Setup
         this._setupSettingsUI();
