@@ -1,10 +1,10 @@
 <div align="center">
-  <h1>🎵 Kazoo Proto</h1>
+  <h1>🎵 MAMBO</h1>
   <p>
-    <strong>Real-time vocal expression to instrumental synthesis, bridging advanced Web Audio DSP with future embedded neural hardware.</strong>
+    <strong>Makes Any Mouth Become Orchestra</strong>
   </p>
   <p>
-    Transform your voice into professional instruments directly in the browser with zero latency.
+    Real-time neural vocal synthesis engine bridging Web Audio DSP with future embedded neural hardware.
   </p>
 
   <p>
@@ -17,16 +17,16 @@
 
   <br>
 
-  <img src="images/readme/app-interface.png" alt="Kazoo Proto Interface" width="100%">
+  <img src="images/readme/app-interface.png" alt="MAMBO Interface" width="100%">
 </div>
 
 <br>
 
 ## 🚀 Introduction
 
-**Kazoo Proto** is a high-performance web application that leverages the Web Audio API to transform vocal input into synthesized instrument sounds in real-time. Unlike traditional pitch-to-MIDI converters, Kazoo Proto uses a custom DSP pipeline running on `AudioWorklet` to ensure sub-20ms latency, preserving the nuanced expression of the human voice including vibrato, slides, and dynamics.
+**MAMBO** (formerly Kazoo Proto) is a high-performance web application that leverages the Web Audio API to transform vocal input into synthesized instrument sounds in real-time. Unlike traditional pitch-to-MIDI converters, MAMBO uses a custom DSP pipeline running on `AudioWorklet` to ensure sub-20ms latency, preserving the nuanced expression of the human voice including vibrato, slides, and dynamics.
 
-Whether you want to sound like a saxophone, a violin, or a futuristic synthesizer, Kazoo Proto provides an immersive, "liquid" playing experience that feels like a real instrument.
+Whether you want to sound like a saxophone, a violin, or a futuristic synthesizer, MAMBO provides an immersive, "liquid" playing experience that feels like a real instrument.
 
 ## ✨ Key Features
 
@@ -44,7 +44,7 @@ Whether you want to sound like a saxophone, a violin, or a futuristic synthesize
 
 ## 🏗 Architecture
 
-Kazoo Proto follows a modern, decoupled architecture designed for performance and maintainability.
+MAMBO follows a modern, decoupled architecture designed for performance and maintainability.
 
 ### Core Components
 
@@ -88,8 +88,8 @@ graph LR
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/zimingwang/Adrian-UI-UX-1.git
-    cd Adrian-UI-UX-1
+    git clone https://github.com/Team-Kazoo/mambo.git
+    cd mambo
     ```
 
 2.  **Install dependencies**

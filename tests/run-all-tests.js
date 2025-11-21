@@ -246,8 +246,8 @@ function generateMarkdownReport(results) {
 async function main() {
     console.log(`${colors.bright}${colors.cyan}`);
     console.log('╔════════════════════════════════════════════════════════════╗');
-    console.log('║         Phase 2 测试套件运行器 (v1.0.0)                   ║');
-    console.log('║         Kazoo Proto Web Alpha 4                            ║');
+    console.log('║         Phase 2 Test Suite Runner (v1.0.0)                ║');
+    console.log('║         MAMBO Web v0.1.0                                   ║');
     console.log('╚════════════════════════════════════════════════════════════╝');
     console.log(colors.reset);
 

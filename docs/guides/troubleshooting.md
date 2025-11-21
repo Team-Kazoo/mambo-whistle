@@ -1,12 +1,12 @@
-# 🔧 Kazoo Proto - 实战故障排查指南
+# 🔧 MAMBO - Troubleshooting Guide
 
-## 📋 快速诊断步骤
+## 📋 Quick Diagnostic Steps
 
-### Step 1: 系统检查 (30秒)
+### Step 1: System Check (30s)
 
-访问: http://localhost:3000/debug-check.html
+Visit: http://localhost:3000/debug-check.html
 
-**期望结果**:
+**Expected Result**:
 ```
 ✓ AudioWorklet: Supported
 ✓ Microphone API: Available
@@ -18,213 +18,213 @@
 ✓ Tone.js: Loaded
 ```
 
-**如果看到 ✗**: 浏览器不兼容，使用 Chrome/Firefox/Edge
+**If you see ✗**: Browser incompatible, please use Chrome/Firefox/Edge.
 
 ---
 
-### Step 2: 合成器测试 (10秒)
+### Step 2: Synthesizer Test (10s)
 
-在 debug-check.html 点击 **"Test Synthesizer (440Hz)"**
+In debug-check.html, click **"Test Synthesizer (440Hz)"**
 
-**期望**: 听到清晰的 A4 音符 (440Hz) 持续0.5秒
+**Expected**: Hear a clear A4 note (440Hz) for 0.5 seconds.
 
-**如果没有声音**:
-- 检查系统音量
-- 检查浏览器音频未被静音
-- 打开控制台看错误信息
+**If no sound**:
+- Check system volume.
+- Check if browser audio is muted.
+- Open console to check for errors.
 
 ---
 
-### Step 3: 麦克风测试 (30秒)
+### Step 3: Microphone Test (30s)
 
-在 debug-check.html 点击 **"Test Microphone"**
+In debug-check.html, click **"Test Microphone"**
 
-**大声唱歌或说话**, 观察控制台输出:
+**Sing or speak loudly**, observe console output:
 
 ```
-期望:
-Volume: 0.015324 RMS (-36.3 dB)  ← 应该 > 0.0005
+Expected:
+Volume: 0.015324 RMS (-36.3 dB)  ← Should be > 0.0005
 Threshold check: PASS
 ```
 
-**如果显示 FAIL**:
-- 靠近麦克风 (5-15cm)
-- 提高音量，大声唱
-- 检查麦克风权限
-- 尝试外置麦克风
+**If FAIL**:
+- Move closer to the microphone (5-15cm).
+- Sing louder.
+- Check microphone permissions.
+- Try an external microphone.
 
-**音量参考值**:
-- 正常唱歌: 0.01 - 0.1 RMS (-40 ~ -20 dB)
-- 大声唱: 0.1 - 0.3 RMS (-20 ~ -10 dB)
-- 太小声: < 0.001 RMS (< -60 dB) ❌
+**Volume Reference**:
+- Normal Singing: 0.01 - 0.1 RMS (-40 ~ -20 dB)
+- Loud Singing: 0.1 - 0.3 RMS (-20 ~ -10 dB)
+- Too Quiet: < 0.001 RMS (< -60 dB) ❌
 
 ---
 
-### Step 4: 主应用测试 (60秒)
+### Step 4: Main App Test (60s)
 
-访问: http://localhost:3000/index.html
+Visit: http://localhost:3000/index.html
 
-1. 点击 **"Start Playing"**
-2. 允许麦克风权限
-3. **大声唱歌** (持续3秒以上)
-4. 打开控制台 (F12)
+1. Click **"Start Playing"**
+2. Allow microphone permission
+3. **Sing loudly** (sustain for 3+ seconds)
+4. Open console (F12)
 
-**期望看到**:
+**Expected Output**:
 ```javascript
-[AudioIO] 📤 配置已下发到 Worklet: { clarityThreshold: 0.10, ... }
-[PitchWorklet] 📥 收到主线程配置
+[AudioIO] 📤 Config sent to Worklet: { clarityThreshold: 0.10, ... }
+[PitchWorklet] 📥 Received main thread config
 [PitchWorklet] 🔧 clarityThreshold: 0.85 → 0.10
-[Main] 🎯 handleWorkletPitchFrame 首次调用
-✅ 检测到音高: 113.7 Hz (A#2), 置信度: 0.58
+[Main] 🎯 handleWorkletPitchFrame called (first time)
+✅ Pitch detected: 113.7 Hz (A#2), Confidence: 0.58
 [ContinuousSynth] ▶ Started at 113.7 Hz
 [ContinuousSynth] 🌟 Brightness: 0.07 → Filter: 3500 Hz
 ```
 
-**关键指标**:
-- frequency: 50-1500 Hz范围内
+**Key Metrics**:
+- frequency: Within 50-1500 Hz
 - confidence: > 0.01
-- Filter: >= 3500 Hz (确保声音不被闷掉)
+- Filter: >= 3500 Hz (Ensures sound isn't muffled)
 
 ---
 
-## 🐛 常见问题诊断
+## 🐛 Common Issues & Solutions
 
-### 问题1: "没有检测到音高"
+### Issue 1: "No Pitch Detected"
 
-**症状**: 控制台只显示 `⚠️ 频率超出配置范围` 或 `❌ 音量过低`
+**Symptoms**: Console shows only `⚠️ Frequency out of range` or `❌ Volume too low`
 
-**可能原因**:
-1. 音量太小 (RMS < 0.0005)
-2. 唱得太高或太低 (超出50-1500Hz)
-3. 环境噪声过大
+**Possible Causes**:
+1. Volume too low (RMS < 0.0005)
+2. Pitch too high or low (Outside 50-1500Hz)
+3. Excessive background noise
 
-**解决方案**:
+**Solutions**:
 
-A) **临时禁用所有过滤** (在控制台运行):
+A) **Temporarily Disable Filters** (Run in console):
 ```javascript
-// 极限放宽阈值
+// Relax thresholds
 app.config.pitchDetector.minVolumeThreshold = 0.00001;
 app.config.pitchDetector.clarityThreshold = 0.01;
 app.config.pitchDetector.minConfidence = 0.001;
 
-// 重启
+// Restart
 app.stop();
 await app.start();
 
-// 现在再次唱歌测试
+// Sing again to test
 ```
 
-B) **手动触发音高** (跳过检测):
+B) **Manually Trigger Pitch** (Skip detection):
 ```javascript
-// 直接设置440Hz (A4)
+// Set to 440Hz (A4)
 continuousSynthEngine.setFrequency(440);
-// 应该听到声音
+// Should hear sound
 ```
 
-C) **检查配置是否生效**:
+C) **Check Config**:
 ```javascript
 configManager.get().pitchDetector
-// 应该返回:
+// Should return:
 // { clarityThreshold: 0.10, minVolumeThreshold: 0.0005, minFrequency: 50, maxFrequency: 1500 }
 ```
 
 ---
 
-### 问题2: "合成器启动了但听不到声音"
+### Issue 2: "Synthesizer Started But No Sound"
 
-**症状**: 控制台显示 `▶ Started at 113.7 Hz` 但没有声音
+**Symptoms**: Console shows `▶ Started at 113.7 Hz` but silence.
 
-**可能原因**: 滤波器频率过低 (< 2000Hz) 导致声音被闷掉
+**Possible Causes**: Filter frequency too low (< 2000Hz) muffling the sound.
 
-**验证**:
+**Verification**:
 ```javascript
-// 检查滤波器频率
+// Check filter frequency
 continuousSynthEngine.filter.frequency.value
-// 应该 >= 3500 Hz
+// Should be >= 3500 Hz
 
-// 检查合成器状态
+// Check synth status
 continuousSynthEngine.isPlaying
-// 应该 = true
+// Should be true
 
-// 检查音量
+// Check volume
 continuousSynthEngine.currentSynth.volume.value
-// 应该 > -20 dB
+// Should be > -20 dB
 ```
 
-**临时修复**:
+**Temporary Fix**:
 ```javascript
-// 强制提高滤波器
+// Force filter up
 continuousSynthEngine.filter.frequency.value = 5000;
 
-// 强制提高音量
-continuousSynthEngine.currentSynth.volume.value = 0;  // 0 dB (最大)
+// Force volume up
+continuousSynthEngine.currentSynth.volume.value = 0;  // 0 dB (Max)
 ```
 
 ---
 
-### 问题3: "停止后无法重启"
+### Issue 3: "Cannot Restart After Stopping"
 
-**症状**: 第一次唱歌正常，停顿后再唱就没声音了
+**Symptoms**: Works first time, but silence after stop/start.
 
-**已修复**: Commit 26313eb
+**Fixed in**: Commit 26313eb
 
-**验证修复**:
+**Verify Fix**:
 ```javascript
-// 检查状态重置逻辑
+// Check reset logic
 continuousSynthEngine.stop.toString().includes('lastArticulationState')
-// 应该返回 true (说明已修复)
+// Should return true (Fix present)
 ```
 
-**如果仍有问题**:
+**If Issue Persists**:
 ```javascript
-// 手动重置状态
+// Manually reset state
 continuousSynthEngine.lastArticulationState = 'silence';
 continuousSynthEngine.isPlaying = false;
 
-// 重新唱歌应该恢复
+// Sing again to restore
 ```
 
 ---
 
-### 问题4: "配置未下发到 Worklet"
+### Issue 4: "Config Not Sent to Worklet"
 
-**症状**: 控制台显示 `⚠️ 未提供 appConfig,使用回退默认值`
+**Symptoms**: Console shows `⚠️ No appConfig provided, using fallback defaults`
 
-**原因**: main.js 未正确传递配置到 AudioIO
+**Cause**: main.js failed to pass config to AudioIO.
 
-**验证**:
+**Verification**:
 ```javascript
-// 检查 audioIO 是否收到配置
+// Check if AudioIO has config
 app.audioIO.appConfig
-// 应该返回完整配置对象
+// Should return full config object
 
-// 检查 Worklet 是否收到配置
-// (需要查看启动时的控制台日志)
-// 应该看到: [PitchWorklet] 🔧 clarityThreshold: 0.85 → 0.10
+// Check if Worklet received config
+// (Check startup logs)
+// Should see: [PitchWorklet] 🔧 clarityThreshold: 0.85 → 0.10
 ```
 
-**修复**:
+**Fix**:
 ```javascript
-// 重新配置 AudioIO
+// Reconfigure AudioIO
 app.audioIO.configure({
     useWorklet: true,
     appConfig: configManager.get()
 });
 
-// 重启
+// Restart
 app.stop();
 await app.start();
 ```
 
 ---
 
-## 🔍 高级调试
+## 🔍 Advanced Debugging
 
-### 实时监控音频数据
+### Real-time Audio Monitoring
 
-在控制台运行:
+Run in console:
 ```javascript
-// 监听所有 PitchFrame 数据
+// Monitor all PitchFrame data
 let frameCount = 0;
 const originalHandler = app.handleWorkletPitchFrame.bind(app);
 app.handleWorkletPitchFrame = function(pitchFrame, timestamp) {
@@ -245,59 +245,59 @@ app.handleWorkletPitchFrame = function(pitchFrame, timestamp) {
 console.log('✅ Frame monitor installed. Sing to see data.');
 ```
 
-### 强制启用 ScriptProcessor 模式
+### Force ScriptProcessor Mode
 
-如果 Worklet 有问题，回退到 ScriptProcessor:
+If Worklet fails, fallback to ScriptProcessor:
 
 ```javascript
 app.stop();
 app.audioIO.configure({
-    useWorklet: false,  // 强制使用 ScriptProcessor
+    useWorklet: false,  // Force ScriptProcessor
     bufferSize: 2048
 });
 await app.start();
 
-// 延迟会变高 (46ms)，但可能更稳定
+// Latency will increase (46ms), but might be more stable
 ```
 
 ---
 
-## 📊 性能基准
+## 📊 Performance Benchmarks
 
-**正常运行指标**:
-- 延迟: 8-15ms (Worklet) 或 46ms (ScriptProcessor)
-- CPU: 5-8% (单核)
-- 检测频率: 10-20 Hz (每秒10-20次音高更新)
-- 音量范围: -40 ~ -10 dB (正常唱歌)
-- 置信度: 0.3 ~ 0.9 (清晰哼唱)
+**Normal Metrics**:
+- Latency: 8-15ms (Worklet) or 46ms (ScriptProcessor)
+- CPU: 5-8% (Single Core)
+- Detection Rate: 10-20 Hz (Pitch updates per second)
+- Volume Range: -40 ~ -10 dB (Normal singing)
+- Confidence: 0.3 ~ 0.9 (Clear humming)
 
-**异常指标**:
-- ❌ 延迟 > 100ms: 音频系统问题
-- ❌ CPU > 20%: 可能有性能bug
-- ❌ 置信度 < 0.1: 噪声过大或唱得不清晰
-- ❌ 音量 < -50 dB: 麦克风太远或增益太低
+**Abnormal Metrics**:
+- ❌ Latency > 100ms: Audio system issue
+- ❌ CPU > 20%: Potential performance bug
+- ❌ Confidence < 0.1: Too much noise or unclear singing
+- ❌ Volume < -50 dB: Microphone too far or gain too low
 
 ---
 
-## 🚀 终极测试方案
+## 🚀 Ultimate Test Plan
 
-如果以上都失败，运行完整验证:
+If all else fails, run full verification:
 
-1. 运行单元测试:
+1. Run Unit Tests:
 ```bash
 npm test
 ```
-期望: 6/6 套件通过
+Expected: 6/6 Suites Passed
 
-2. 浏览器冒烟测试:
+2. Browser Smoke Test:
 ```bash
 open tests/BROWSER_SMOKE_TEST.md
 ```
-按文档执行 7 项验证
+Follow the 7 steps in the doc.
 
-3. 如果仍失败，收集诊断信息:
+3. Collect Diagnostic Info:
 ```javascript
-// 复制以下所有输出发送给开发者
+// Copy all output and send to developer
 console.log('=== DIAGNOSTIC INFO ===');
 console.log('Browser:', navigator.userAgent);
 console.log('AudioWorklet:', typeof AudioWorkletNode !== 'undefined');
@@ -310,6 +310,6 @@ console.log('Tone.js state:', Tone.context.state);
 
 ---
 
-**创建时间**: 2025-11-02
-**目标**: 快速定位和解决"无法使用"问题
-**前提**: 本地服务器已启动 (npm start)
+**Created**: 2025-11-02
+**Goal**: Rapidly locate and fix "unusable" issues
+**Prerequisite**: Local server started (npm start)

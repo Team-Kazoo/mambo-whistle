@@ -1,8 +1,8 @@
 {
-  "name": "mambo-web",
+  "name": "mambo-pine",
   "version": "0.1.0",
   "type": "module",
-  "description": "MAMBO - Real-time neural vocal synthesis engine bridging Web Audio and embedded hardware",
+  "description": "MAMBO: Makes Any Mouth Become Orchestra. A real-time neural vocal synthesis engine with embedded hardware.",
   "main": "index.html",
   "scripts": {
     "dev": "npx serve . -p 3000",
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/zimingwang/KazooProtoWeb-Alpha4.git"
+    "url": "https://github.com/Team-Kazoo/mambo.git"
   },
   "keywords": [
     "audio",
