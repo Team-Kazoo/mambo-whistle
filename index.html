@@ -78,12 +78,13 @@
         
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
-        /* 玻璃拟态优化 - 减少 blur 降低 GPU 负载 */
+        /* 玻璃拟态优化 - Modern Apple Style */
         .glass {
-            background: rgba(255, 255, 255, 0.80);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
         }
 
         /* 强制硬件加速，解决闪烁问题 */
@@ -186,12 +187,10 @@
 </head>
 <body class="bg-[#F5F5F7] text-[#1D1D1F] min-h-screen relative">
 
-    <!-- 背景：优化 blur 减少 GPU 负载 -->
-    <div class="fixed inset-0 z-0 pointer-events-none">
-        <div class="absolute top-[-10%] left-[10%] w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob gpu-accelerated"></div>
-        <div class="absolute top-[-10%] right-[10%] w-96 h-96 bg-yellow-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob animation-delay-2000 gpu-accelerated"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-[60px] opacity-40 animate-blob animation-delay-4000 gpu-accelerated"></div>
-        <div class="absolute inset-0 bg-white/50"></div>
+    <!-- Background: Static Mesh Gradient for Performance (Apple Studio Style) -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-[#F5F5F7]">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0)_50%)]"></div>
+        <div class="absolute top-0 left-0 right-0 h-[600px] bg-[radial-gradient(circle_at_50%_-20%,rgba(66,133,244,0.03),rgba(255,255,255,0)_60%)]"></div>
     </div>
 
     <!-- 导航栏 -->
@@ -772,22 +771,36 @@
             <!-- Status Bar (for compatibility with main.js) -->
             <div id="statusBar" class="hidden"></div>
 
-            <!-- Visualizer -->
-            <div id="visualizer" class="hidden mb-16 fade-up">
-                <div class="bg-[#161617] rounded-[32px] p-8 md:p-10 shadow-2xl relative overflow-hidden border border-white/10">
-                    <div class="absolute top-[-50%] left-[-10%] w-[80%] h-[200%] bg-gradient-to-r from-blue-500/15 via-purple-500/8 to-transparent rotate-12 blur-2xl pointer-events-none gpu-accelerated"></div>
-
-                    <div class="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                        <div class="text-center md:text-left min-w-[140px]">
-                            <span class="inline-block text-[10px] font-bold text-white/50 tracking-[0.2em] mb-1">DETECTED PITCH</span>
+            <!-- Visualizer (Pro Audio Style) -->
+            <div id="visualizer" class="hidden mb-16 transition-all duration-700 ease-out transform translate-y-4 opacity-0" data-active-class="translate-y-0 opacity-100">
+                <div class="bg-[#050505] rounded-[24px] p-1 shadow-2xl ring-1 ring-black/5 relative overflow-hidden">
+                    <!-- Screen Glare -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10"></div>
+                    
+                    <div class="relative z-20 flex flex-col md:flex-row gap-0 bg-[#0A0A0A] rounded-[20px] overflow-hidden">
+                        <!-- Info Panel -->
+                        <div class="p-8 md:w-64 flex flex-col justify-center border-b md:border-b-0 md:border-r border-white/5 bg-[#0F0F0F]">
+                            <span class="text-[9px] font-bold text-blue-400 tracking-[0.2em] uppercase mb-2">Real-time Analysis</span>
                             <div class="flex flex-col">
-                                <h2 id="currentNote" class="text-7xl font-display font-bold tracking-tighter text-white drop-shadow-lg">--</h2>
-                                <span id="currentFreq" class="text-lg text-white/60 font-mono mt-1">0 Hz</span>
+                                <h2 id="currentNote" class="text-6xl font-display font-bold tracking-tighter text-white">--</h2>
+                                <span id="currentFreq" class="text-sm text-gray-500 font-mono mt-2">Waiting for audio...</span>
+                            </div>
+                            
+                            <div class="mt-8 flex gap-4">
+                                <div>
+                                    <div class="text-[9px] text-gray-600 uppercase tracking-wider font-bold mb-1">Confidence</div>
+                                    <div id="confidence" class="text-xs font-mono text-green-400">--</div>
+                                </div>
+                                <div>
+                                    <div class="text-[9px] text-gray-600 uppercase tracking-wider font-bold mb-1">Latency</div>
+                                    <div id="latency" class="text-xs font-mono text-blue-400">--</div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="flex-1 w-full h-32 bg-black/50 rounded-2xl border border-white/10 p-1 shadow-inner">
-                            <canvas id="pitchCanvas" class="w-full h-full rounded-xl"></canvas>
+                        <!-- Canvas Area -->
+                        <div class="flex-1 h-[300px] relative bg-[#050505]">
+                            <canvas id="pitchCanvas" class="w-full h-full block"></canvas>
                         </div>
                     </div>
                 </div>

@@ -536,6 +536,9 @@ class KazooApp {
         const openSettings = () => {
             if (this.ui.settingsModal) {
                 this.ui.settingsModal.classList.remove('hidden');
+                // Prevent background scrolling
+                document.body.classList.add('overflow-hidden');
+                
                 // Trigger reflow
                 void this.ui.settingsModal.offsetWidth;
                 // Animate in
@@ -550,6 +553,9 @@ class KazooApp {
                 if (this.ui.settingsBackdrop) this.ui.settingsBackdrop.classList.add('opacity-0');
                 if (this.ui.settingsPanel) this.ui.settingsPanel.classList.add('translate-x-full');
                 
+                // Remove scroll lock
+                document.body.classList.remove('overflow-hidden');
+
                 // Wait for transition
                 setTimeout(() => {
                     this.ui.settingsModal.classList.add('hidden');
@@ -1003,6 +1009,17 @@ class KazooApp {
             statusBar: { show: true },
             visualizer: { show: true }
         });
+
+        // Trigger smooth entry animation for visualizer
+        if (this.ui.visualizer) {
+            // Double rAF to ensure browser paints the display:block state first
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    this.ui.visualizer.classList.remove('opacity-0', 'translate-y-4');
+                    this.ui.visualizer.classList.add('translate-y-0', 'opacity-100');
+                });
+            });
+        }
 
         // Force visualizer resize to prevent blank canvas
         requestAnimationFrame(() => {
