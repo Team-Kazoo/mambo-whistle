@@ -127,6 +127,17 @@ graph LR
 -   [ ] **Phase 4: VST/AU Plugin** - Wrap as a native desktop plugin.
 -   [ ] **Phase 5: Polyphony** - Experimental polyphonic voice tracking.
 
+## 🔮 Technical Upgrade & Research
+
+We are actively researching the migration from Web Audio API to embedded hardware and next-generation Neural Audio Synthesis. Our goal is to create a standalone physical instrument.
+
+**Key Research Areas:**
+*   **Neural Synthesis:** Moving to **RAVE** (Realtime Audio Variational autoEncoder) and **DDSP** for photorealistic instrument emulation.
+*   **Deep Learning Perception:** Exploring **CREPE**, **SPICE**, and 2025-era models (SwiftF0, FCPE) for robust pitch tracking in noisy environments.
+*   **Hardware:** Targeting **NVIDIA Jetson** and **Raspberry Pi 5** for embedded deployment.
+
+👉 **[Read the full Research & Hardware Roadmap](docs/research/FUTURE_TECHNOLOGIES.md)**
+
 ## 🤝 Contributing
 
 We welcome contributions from the community! Whether it's a bug fix, a new feature, or a documentation improvement, your help is appreciated.
