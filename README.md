@@ -1,7 +1,7 @@
 <div align="center">
   <h1>🎵 Kazoo Proto</h1>
   <p>
-    <strong>Real-time Voice-to-Instrument Synthesis Engine</strong>
+    <strong>Real-time vocal expression to instrumental synthesis, bridging advanced Web Audio DSP with future embedded neural hardware.</strong>
   </p>
   <p>
     Transform your voice into professional instruments directly in the browser with zero latency.
@@ -123,9 +123,10 @@ graph LR
 
 -   [x] **Phase 1: Core DSP & AudioWorklet** - Stable low-latency tracking.
 -   [x] **Phase 2: UI/UX Modernization** - Glassmorphism design & Liquid Visualizer.
--   [ ] **Phase 3: MIDI Support** - Export MIDI data to DAWs.
--   [ ] **Phase 4: VST/AU Plugin** - Wrap as a native desktop plugin.
--   [ ] **Phase 5: Polyphony** - Experimental polyphonic voice tracking.
+-   [ ] **Phase 3: Neural Audio Research** - Implement RAVE/DDSP for photorealistic synthesis.
+-   [ ] **Phase 4: Embedded Hardware** - Prototype on NVIDIA Jetson & Raspberry Pi.
+-   [ ] **Phase 5: Connectivity** - MIDI export & VST/AU Plugin wrapper.
+-   [ ] **Phase 6: Polyphony** - Experimental polyphonic voice tracking.
 
 ## 🔮 Technical Upgrade & Research
 
