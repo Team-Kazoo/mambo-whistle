@@ -1,6 +1,6 @@
 # 配置系统文档
 
-**MAMBO Web - Centralized Configuration Management**
+**Mambo Whistle Web - Centralized Configuration Management**
 
 ---
 
@@ -411,5 +411,5 @@ const config = configManager.load({
 ---
 
 **版本**: Alpha 4
-**Maintainer**: MAMBO Team
+**Maintainer**: Mambo Whistle Team
 **License**: MIT

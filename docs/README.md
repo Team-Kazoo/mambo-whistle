@@ -1,6 +1,6 @@
 # Documentation Index
 
-Documentation for MAMBO Web v0.5.0 - Real-time voice-to-instrument system.
+Documentation for Mambo Whistle Web v0.5.0 - Real-time voice-to-instrument system.
 
 ## Quick Links
 

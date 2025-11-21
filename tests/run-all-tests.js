@@ -247,7 +247,7 @@ async function main() {
     console.log(`${colors.bright}${colors.cyan}`);
     console.log('╔════════════════════════════════════════════════════════════╗');
     console.log('║         Phase 2 Test Suite Runner (v1.0.0)                ║');
-    console.log('║         MAMBO Web v0.1.0                                   ║');
+    console.log('║         Mambo Whistle Web v0.1.0                           ║');
     console.log('╚════════════════════════════════════════════════════════════╝');
     console.log(colors.reset);
 

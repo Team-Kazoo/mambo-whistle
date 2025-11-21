@@ -157,7 +157,7 @@ class MamboApp {
      * Step 2: Use injected configManager
      */
     async initialize() {
-        console.log('Initializing MAMBO (No-Calibration Version)...');
+        console.log('Initializing Mambo Whistle (No-Calibration Version)...');
 
         // Step 2: Use injected configManager (fallback to global if not injected)
         const manager = this.configManager || configManager;
@@ -1082,13 +1082,13 @@ class MamboApp {
 
     async start() {
         try {
-            console.log(`Starting MAMBO in ${this.useContinuousMode ? 'Continuous' : 'Legacy'} mode...`);
+            console.log(`Starting Mambo Whistle in ${this.useContinuousMode ? 'Continuous' : 'Legacy'} mode...`);
 
             this._captureDeviceSelection();
             await this._initializeAudioSystem();
             this._updateUIForStarted();
 
-            console.log('✓ MAMBO is running!');
+            console.log('✓ Mambo Whistle is running!');
 
         } catch (error) {
             this._handleStartupError(error);
@@ -1287,10 +1287,8 @@ class MamboApp {
     /**
      * Stop Playback
      */
-    async stop() {
-        if (!this.isRunning) return;
-
-        console.log('Stopping MAMBO...');
+    stop() {
+        console.log('Stopping Mambo Whistle...');
         this.isRunning = false;
 
         if (this.audioLoopController) {
@@ -1324,7 +1322,7 @@ class MamboApp {
             }
         });
 
-        console.log('MAMBO stopped');
+        console.log('Mambo Whistle stopped');
     }
 
 

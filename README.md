@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🎵 MAMBO</h1>
+  <h1>🎵 Mambo Whistle</h1>
   <p>
     <strong>Makes Any Mouth Become Orchestra</strong>
   </p>
@@ -17,16 +17,17 @@
 
   <br>
 
-  <img src="images/readme/app-interface.png" alt="MAMBO Interface" width="100%">
+  <img src="images/readme/app-interface.png" alt="Mambo Whistle Interface" width="100%">
 </div>
 
 <br>
 
 ## 🚀 Introduction
 
-**MAMBO** (formerly Kazoo Proto) is a high-performance web application that leverages the Web Audio API to transform vocal input into synthesized instrument sounds in real-time. Unlike traditional pitch-to-MIDI converters, MAMBO uses a custom DSP pipeline running on `AudioWorklet` to ensure low latency (~50-60ms), preserving the nuanced expression of the human voice including vibrato, slides, and dynamics.
+**Mambo Whistle** is a high-performance web application that leverages the Web Audio API to transform vocal input into synthesized instrument sounds in real-time. Unlike traditional pitch-to-MIDI converters, Mambo Whistle uses a custom DSP pipeline running on `AudioWorklet` to ensure low latency (~50-60ms), preserving the nuanced expression of the human voice including vibrato, slides, and dynamics.
 
-Whether you want to sound like a saxophone, a violin, or a futuristic synthesizer, MAMBO provides an immersive, "liquid" playing experience that feels like a real instrument.
+### Why It's Different
+Whether you want to sound like a saxophone, a violin, or a futuristic synthesizer, Mambo Whistle provides an immersive, "liquid" playing experience that feels like a real instrument.
 
 ## ✨ Key Features
 
@@ -42,9 +43,9 @@ Whether you want to sound like a saxophone, a violin, or a futuristic synthesize
 -   **Expressive Synthesis**: Maps vocal volume and timbre to synth parameters (Cutoff, Resonance, Envelope) for dynamic expression.
 -   **Privacy First**: All processing happens locally in the browser. No audio data is ever sent to a server.
 
-## 🏗 Architecture
+## Architecture
 
-MAMBO follows a modern, decoupled architecture designed for performance and maintainability.
+Mambo Whistle follows a modern, decoupled architecture designed for performance and maintainability.
 
 ### Core Components
 
@@ -163,7 +164,8 @@ If you are excited about music technology and hardware, contact us at **[zwangnv
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Proprietary. Copyright (c) 2025 Ziming Wang. All Rights Reserved.
+Unauthorized copying, modification, distribution, or use of this software is strictly prohibited.
 
 **Authors**:
 *   **Ziming Wang**

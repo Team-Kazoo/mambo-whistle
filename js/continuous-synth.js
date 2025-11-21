@@ -23,7 +23,7 @@ import instrumentPresetManager from './config/instrument-presets.js';
  * - Noise layer parameters read from centralized config
  *
  * @class ContinuousSynthEngine
- * @author MAMBO Team
+ * @author Mambo Whistle Team
  * @version 2.0.1-alpha
  */
 

@@ -1,4 +1,4 @@
-# 🔧 MAMBO - Troubleshooting Guide
+# 🔧 Mambo Whistle - Troubleshooting Guide
 
 ## 📋 Quick Diagnostic Steps
 

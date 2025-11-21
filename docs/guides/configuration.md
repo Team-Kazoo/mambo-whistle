@@ -1,4 +1,4 @@
-# MAMBO Web - Configuration Guide
+# Mambo Whistle Web - Configuration Guide
 
 **版本**: Alpha 4
 **最后更新**: 2025-11-01
@@ -678,6 +678,6 @@ FFT Size vs Interval
 
 ---
 
-**Maintainer**: MAMBO Team
+**Maintainer**: Mambo Whistle Team
 **联系方式**: 请通过 GitHub Issues 提问
 **License**: MIT

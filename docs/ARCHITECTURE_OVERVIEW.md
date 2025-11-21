@@ -1,4 +1,4 @@
-# MAMBO Web - Architecture Overview
+# Mambo Whistle Web - Architecture Overview
 
 **Version**: 0.1.0 (Performance First)
 **Date**: 2025-11-21
@@ -49,7 +49,7 @@ User hums/speaks into microphone → System detects pitch and expression in real
 ## III. Project Structure
 
 ```
-mambo-pine/
+mambo-whistle/
 ├── index.html                  # Main Page (Apple-style UI)
 ├── css/
 │   └── styles.css             # Custom Styles
@@ -403,7 +403,7 @@ window.container.get('performanceMonitor').getMetrics()
 
 ```html
 <nav> Navigation Bar
-    - Logo (MAMBO)
+    - Logo (Mambo Whistle)
     - Nav Links (Instruments, Visualizer, Tips)
     - Mode Switcher (Continuous/Legacy)
 </nav>
@@ -442,7 +442,7 @@ window.container.get('performanceMonitor').getMetrics()
     </section>
 
     <section> Early Bird Form
-        - Email Subscription (MAMBO Pro Desktop)
+        - Email Subscription (Mambo Whistle Pro Desktop)
     </section>
 
     <footer> Copyright

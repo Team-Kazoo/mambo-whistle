@@ -1,5 +1,5 @@
 /**
- * MAMBO Web - Centralized Configuration Management
+ * Mambo Whistle Web - Centralized Configuration Management
  *
  * Based on modern software engineering best practices:
  * - Single Source of Truth

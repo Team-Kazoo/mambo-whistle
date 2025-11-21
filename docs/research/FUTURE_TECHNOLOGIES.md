@@ -3,7 +3,7 @@
 **Status:** Research & Planning
 **Last Updated:** 2025-11-21
 
-This document outlines the technical roadmap for evolving MAMBO from a web-based prototype into a professional embedded hardware instrument. Our focus shifts towards state-of-the-art Deep Learning (DL) synthesis and low-latency hardware integration.
+This document outlines the technical roadmap for evolving Mambo Whistle from a web-based prototype into a professional embedded hardware instrument. Our focus shifts towards state-of-the-art Deep Learning (DL) synthesis and low-latency hardware integration.
 
 ---
 

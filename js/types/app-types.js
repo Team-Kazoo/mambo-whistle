@@ -1,5 +1,5 @@
 /**
- * @fileoverview Central Type Definitions for MAMBO
+ * @fileoverview Central Type Definitions for Mambo Whistle
  * Serves as the "Contract" between Audio Core and UI.
  */
 
