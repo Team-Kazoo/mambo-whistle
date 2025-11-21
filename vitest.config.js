@@ -69,8 +69,8 @@ export default defineConfig({
     // 静默模式 (减少输出)
     silent: false,
 
-    // UI 模式配置 (npm run test:ui)
-    ui: true
+    // UI 模式默认关闭；如需可视化运行使用 `npm run test:ui` 或 `vitest --ui`
+    ui: false
   },
 
   // 解析配置
