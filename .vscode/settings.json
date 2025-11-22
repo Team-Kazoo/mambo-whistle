@@ -18,5 +18,7 @@
     "**/.git": true,
     "**/.DS_Store": true,
     "**/node_modules": true
-  }
+  },
+  "idf.pythonInstallPath": "/Users/zimingwang/.pyenv/shims/python",
+  "cmake.sourceDirectory": "/Users/zimingwang/Documents/GitHub/Adrian-UI-UX-1/node_modules/bare-fs"
 }
