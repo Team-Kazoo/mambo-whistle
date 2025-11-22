@@ -156,8 +156,13 @@ class AudioIO {
             await this._initializeAudioContext();
 
             // 1.5 如果配置了输出设备，尝试设置
-            if (this.config.outputDeviceId && this.config.outputDeviceId !== 'default') {
+            // CRITICAL FIX: Only set output device on FIRST start, not on restart
+            // Otherwise it will overwrite user's selection during hot device switching
+            if (!this.isInitialized && this.config.outputDeviceId && this.config.outputDeviceId !== 'default') {
+                console.log('[AudioIO] 初始化输出设备:', this.config.outputDeviceId);
                 await this.setAudioOutputDevice(this.config.outputDeviceId);
+            } else if (this.isInitialized) {
+                console.log('[AudioIO] 跳过输出设备设置 (已初始化，保留用户选择)');
             }
 
             // 2. 请求麦克风权限 (传入配置的 inputDeviceId)
@@ -454,6 +459,15 @@ class AudioIO {
 
         if (!AudioContextClass) {
             throw new Error('浏览器不支持 Web Audio API');
+        }
+
+        // CRITICAL FIX: Reuse existing AudioContext if available
+        if (this.audioContext) {
+            console.log(' 复用现有 AudioContext');
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+            return;
         }
 
         this.audioContext = new AudioContextClass({

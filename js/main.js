@@ -212,7 +212,9 @@ class MamboApp {
 
         // Populate device list (initial attempt)
         // Note: Without permission, labels might be empty or list incomplete
-        this._refreshDeviceList();
+        // CRITICAL FIX: Don't auto-request permission on page load to prevent
+        // unwanted bluetooth device activation. Only enumerate what's available.
+        this._refreshDeviceList({ skipPermissionRequest: true });
 
         if (navigator.mediaDevices?.addEventListener && !this._deviceChangeListener) {
             this._deviceChangeListener = () => {
@@ -531,7 +533,10 @@ class MamboApp {
                 this._persistDevicePreference('input', deviceId, selectedLabel);
                 this._updateDeviceHelperText();
 
-                console.log(`[Main] Input device selected: ${deviceId}`);
+                console.log(`[Main] Input device selected: ${deviceId}`, {
+                    label: selectedLabel,
+                    isRunning: this.isRunning
+                });
 
                 // If running, restart to apply new microphone
                 if (this.isRunning && this.audioIO) {
@@ -543,7 +548,22 @@ class MamboApp {
                         await this.audioIO.stop();
                         this.audioIO.configure({ inputDeviceId: deviceId });
                         await this.audioIO.start();
-                        console.log('[Main] Audio restarted with new input.');
+
+                        // CRITICAL FIX: After restart, verify the actual device used
+                        const inputTrack = this.audioIO?.stream?.getAudioTracks?.()?.[0];
+                        if (inputTrack) {
+                            const settings = inputTrack.getSettings ? inputTrack.getSettings() : {};
+                            const actualDeviceId = settings.deviceId;
+                            console.log('[Main] Audio restarted. Requested:', deviceId, 'Actual:', actualDeviceId);
+
+                            // Update UI to reflect actual device
+                            if (actualDeviceId && actualDeviceId !== deviceId) {
+                                console.warn('[Main] ⚠️ Browser used different device than requested');
+                                this.selectedInputId = actualDeviceId;
+                                this._syncSelectValue(this.ui.audioInputSelect, actualDeviceId, inputTrack.label);
+                            }
+                        }
+
                         this.view.renderStatusMessage(originalText);
                     } catch (err) {
                         console.error('[Main] Failed to switch input:', err);
@@ -649,44 +669,47 @@ class MamboApp {
     /**
      * Refresh audio device list
      * Uses a temporary AudioIO instance to enumerate devices
+     * @param {Object} options - Options
+     * @param {boolean} options.skipPermissionRequest - If true, skip requesting permission on page load
      */
-    async _refreshDeviceList() {
-        console.log('[Main] Refreshing device list...');
-        
+    async _refreshDeviceList(options = {}) {
+        const { skipPermissionRequest = false } = options;
+        console.log('[Main] Refreshing device list...', { skipPermissionRequest });
+
         // Use temp AudioIO if main one doesn't exist
         const tempAudioIO = this.audioIO || new AudioIO();
-        
+
         try {
             let { inputs, outputs } = await tempAudioIO.enumerateDevices();
 
             // Check if labels are missing
             const hasEmptyLabels = inputs.some(d => !d.label) || outputs.some(d => !d.label);
-            
+
             if (hasEmptyLabels) {
                 console.warn('[Main] Device labels missing.');
-                
+
                 if (this.isRunning && this.audioIO && this.audioIO.stream) {
-                    // Case A: App is running, so we HAVE permission. 
+                    // Case A: App is running, so we HAVE permission.
                     // Chrome sometimes needs a moment after getUserMedia to populate labels.
                     console.log('[Main] App is running, retrying enumeration in 500ms...');
                     await new Promise(resolve => setTimeout(resolve, 500));
                     const retry = await tempAudioIO.enumerateDevices();
                     inputs = retry.inputs;
                     outputs = retry.outputs;
-                } else {
+                } else if (!skipPermissionRequest) {
                     // Case B: App is stopped. We need to ask for permission.
                     console.log('[Main] App is stopped, requesting temporary permission...');
-                    
+
                     // Visual feedback
                     const originalText = this.ui.refreshDevicesBtn ? this.ui.refreshDevicesBtn.innerText : '';
                     if (this.ui.refreshDevicesBtn) this.ui.refreshDevicesBtn.innerText = 'Requesting Permission...';
-                    
+
                     try {
                         // Request explicit permission
                         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                         // Stop immediately
                         stream.getTracks().forEach(t => t.stop());
-                        
+
                         // Re-enumerate
                         const result = await tempAudioIO.enumerateDevices();
                         inputs = result.inputs;
@@ -698,9 +721,11 @@ class MamboApp {
                     } finally {
                         if (this.ui.refreshDevicesBtn) this.ui.refreshDevicesBtn.innerText = originalText;
                     }
+                } else {
+                    console.log('[Main] Skipping permission request (page load optimization)');
                 }
             }
-            
+
             // Render device selects via View layer
             const desiredInputVal = this.selectedInputId || this.ui.audioInputSelect?.value || 'default';
             const desiredOutputVal = this.selectedOutputId || this.ui.audioOutputSelect?.value || 'default';
@@ -730,10 +755,24 @@ class MamboApp {
             const settings = inputTrack.getSettings ? inputTrack.getSettings() : {};
             let appliedId = settings.deviceId;
             const label = inputTrack.label || this.lastKnownInputLabel;
+
+            console.log('[Main] Capturing active device state:', {
+                requestedId: this.selectedInputId,
+                appliedId,
+                label
+            });
+
             if (!appliedId && label) {
                 appliedId = this._findDeviceIdByLabel(this.ui.audioInputSelect, label);
             }
             if (appliedId) {
+                // Only update if different from what we requested
+                if (appliedId !== this.selectedInputId) {
+                    console.warn('[Main] ⚠️ Browser applied different device:', {
+                        requested: this.selectedInputId,
+                        applied: appliedId
+                    });
+                }
                 this.selectedInputId = appliedId;
                 this._persistDevicePreference('input', appliedId, label);
                 this._syncSelectValue(this.ui.audioInputSelect, appliedId, label);
