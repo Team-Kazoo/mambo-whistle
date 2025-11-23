@@ -1,32 +1,32 @@
-// Tone.js is loaded globally via <script>; stay resilient in non-browser envs (tests)
+// ai-harmonizer.js - Fixed version with proper Magenta integration
 const Tone = (typeof window !== 'undefined' && window.Tone) ? window.Tone : null;
 
 /**
  * AI Harmonizer using Google Magenta (MusicRNN)
- * 
- * Architecture:
- * - Lazy loads the heavy ML model only when enabled.
- * - Runs as a "Sidechain" to the main audio loop.
- * - Buffers incoming pitch data, quantizes it, and periodically asks the AI for accompaniment.
- * - Manages its own simple PolySynth for backing chords/arpeggios.
+ *
+ * FIXED (2025-11-23):
+ * - Removed dynamic script loading (scripts are already in HTML)
+ * - Fixed MusicRNN model initialization
+ * - Fixed freqToMidi conversion (custom implementation)
+ * - Improved error handling and logging
  */
 export class AiHarmonizer {
     constructor() {
         this.enabled = false;
-        this.status = 'idle'; // idle, loading, ready, error
+        this.status = 'idle'; // idle, loading, ready, processing, error
         this.model = null;
         this.backingSynth = null;
-        
+
         // Configuration
         this.checkpointURL = 'https://storage.googleapis.com/magentadata/js/checkpoints/music_rnn/chord_pitches_improv';
-        this.temperature = 1.1; // Higher = more random/creative
-        
+        this.temperature = 1.1; // Creativity level (0.5-1.5)
+
         // Data Buffering
         this.noteBuffer = [];
-        this.maxBufferLength = 32; // Number of quantized steps to keep
+        this.maxBufferLength = 32; // Number of quantized notes to keep
         this.lastProcessTime = 0;
-        this.processInterval = 4000; // Generate new backing every 4 seconds
-        
+        this.processInterval = 4000; // Generate every 4 seconds
+
         // State
         this.currentChord = null;
         this.isGenerating = false;
@@ -34,105 +34,130 @@ export class AiHarmonizer {
         // Event listeners
         this.onStatusChange = null; // Callback for UI updates
 
+        // Validation
         if (!Tone) {
-            console.warn('[AI Harmonizer] Tone.js not available – AI mode disabled');
+            console.warn('[AI Harmonizer] Tone.js not available');
+        }
+
+        // Check if Magenta is loaded
+        if (typeof window === 'undefined' || !window.music_rnn) {
+            console.warn('[AI Harmonizer] Magenta not loaded. Add Magenta scripts to HTML.');
         }
     }
 
     /**
-     * Lazy load the Magenta library and model
+     * Initialize and enable AI Harmonizer
      */
     async enable() {
-        if (this.enabled) return;
+        if (this.enabled) {
+            console.log('[AI Harmonizer] Already enabled');
+            return;
+        }
+
         if (!Tone) {
             throw new Error('Tone.js not available – cannot enable AI Jam');
+        }
+
+        if (!window.music_rnn) {
+            throw new Error('Magenta MusicRNN not loaded. Check HTML script tags.');
         }
 
         try {
             this._updateStatus('loading', 'Loading Neural Net...');
 
-            // 1. Dynamic Import of Magenta (CDN) to avoid loading it on initial page load
-            // We use the global script tag approach for Magenta as it's often more stable for the browser bundle
-            if (!window.mm) {
-                await this._loadScript('https://cdn.jsdelivr.net/npm/@magenta/music@1.23.1/dist/magentamusic.min.js');
-            }
-
-            // 2. Initialize Model
-            if (!this.model) {
-                this.model = new window.mm.MusicRNN(this.checkpointURL);
-                await this.model.initialize();
-            }
-
-            // Ensure AudioContext resumed after user gesture
-            if (Tone && Tone.context && Tone.context.state !== 'running' && typeof Tone.start === 'function') {
+            // Ensure AudioContext is running (requires user gesture)
+            if (Tone.context.state !== 'running') {
                 await Tone.start();
+                console.log('[AI Harmonizer] AudioContext resumed');
             }
 
-            // 3. Initialize Backing Synth (Simple Pad)
-            if (!this.backingSynth && Tone) {
+            // Initialize MusicRNN Model
+            if (!this.model) {
+                console.log('[AI Harmonizer] Creating MusicRNN model from:', this.checkpointURL);
+                this.model = new window.music_rnn.MusicRNN(this.checkpointURL);
+
+                console.log('[AI Harmonizer] Initializing model (this may take 2-3 seconds)...');
+                await this.model.initialize();
+
+                console.log('[AI Harmonizer] ✓ Model initialized successfully');
+            }
+
+            // Initialize Backing Synth
+            if (!this.backingSynth) {
                 this.backingSynth = new Tone.PolySynth(Tone.Synth, {
-                    oscillator: { type: "fatsawtooth", count: 3, spread: 30 },
-                    envelope: { attack: 0.2, decay: 0.1, sustain: 0.5, release: 1 }
+                    oscillator: {
+                        type: "fatsawtooth",
+                        count: 3,
+                        spread: 30
+                    },
+                    envelope: {
+                        attack: 0.2,
+                        decay: 0.1,
+                        sustain: 0.5,
+                        release: 1
+                    }
                 }).toDestination();
-                
-                // Lower volume for backing
+
+                // Lower volume for backing track
                 this.backingSynth.volume.value = -12;
-                
-                // Add some reverb to make it spacey
+
+                // Add reverb for spacious sound
                 const reverb = new Tone.Reverb(3).toDestination();
                 this.backingSynth.connect(reverb);
+
+                console.log('[AI Harmonizer] ✓ Backing synth created');
             }
 
             this.enabled = true;
             this._updateStatus('ready', 'AI Listening...');
-            console.log('🤖 AI Harmonizer Ready');
+            console.log('🤖 [AI Harmonizer] Ready');
 
         } catch (error) {
-            console.error('AI Harmonizer Failed to Load:', error);
-            this._updateStatus('error', 'Model Load Failed');
+            console.error('[AI Harmonizer] ❌ Failed to load:', error);
+            this._updateStatus('error', error.message || 'Model Load Failed');
             this.enabled = false;
+            throw error; // Re-throw so UI can handle it
         }
-    }
-
-    disable() {
-        this.enabled = false;
-        this.isGenerating = false;
-        
-        // Release synth voices
-        if (this.backingSynth) {
-            this.backingSynth.releaseAll();
-        }
-        
-        // We DO NOT dispose the model here to avoid re-downloading/re-initializing cost
-        // if the user toggles it back on. Memory vs. Speed trade-off.
-        // If memory is critical, we could adding a explicit 'dispose' method.
-        
-        this._updateStatus('idle', 'AI Off');
     }
 
     /**
-     * Main Process Loop (called by main.js)
-     * @param {Object} pitchFrame - The detected pitch data
+     * Disable AI Harmonizer
+     */
+    disable() {
+        this.enabled = false;
+        this.isGenerating = false;
+
+        // Release all synth voices
+        if (this.backingSynth) {
+            this.backingSynth.releaseAll();
+        }
+
+        // Clear buffer
+        this.noteBuffer = [];
+
+        this._updateStatus('idle', 'AI Off');
+        console.log('[AI Harmonizer] Disabled');
+    }
+
+    /**
+     * Process incoming pitch frame (called from main audio loop)
+     * @param {Object} pitchFrame - { frequency, confidence, ... }
      */
     processFrame(pitchFrame = {}) {
         if (!this.enabled || !this.model || this.status !== 'ready') return;
 
         const now = Date.now();
-        const clarity = typeof pitchFrame.confidence === 'number'
-            ? pitchFrame.confidence
-            : (pitchFrame.clarity ?? 0);
-        const frequency = typeof pitchFrame.frequency === 'number'
-            ? pitchFrame.frequency
-            : (pitchFrame.pitch ?? 0);
 
-        // 1. Data Collection (Quantize & Buffer)
-        // We only care about strong, clear notes for the AI
+        // Extract confidence and frequency (support multiple property names)
+        const clarity = pitchFrame.confidence ?? pitchFrame.clarity ?? 0;
+        const frequency = pitchFrame.frequency ?? pitchFrame.pitch ?? 0;
+
+        // Only buffer high-confidence notes
         if (clarity > 0.9 && frequency > 0) {
             this._addToBuffer(frequency);
         }
 
-        // 2. Trigger Generation Logic
-        // If enough time has passed, ask the AI for a new layer
+        // Trigger generation periodically
         if (now - this.lastProcessTime > this.processInterval && !this.isGenerating) {
             this._generateBackingSequence();
             this.lastProcessTime = now;
@@ -140,103 +165,128 @@ export class AiHarmonizer {
     }
 
     /**
-     * Add a pitch to the circular buffer (Quantized to MIDI)
+     * Add pitch to buffer (convert to MIDI and deduplicate)
      */
     _addToBuffer(freq) {
-        if (!window.mm) return;
+        const midi = this._freqToMidi(freq);
 
-        const midi = window.mm.freqToMidi(freq);
-        // Simple deduplication (don't fill buffer with same note 100 times)
+        // Deduplication: don't add same note repeatedly
         const lastNote = this.noteBuffer[this.noteBuffer.length - 1];
-        
+
         if (lastNote !== midi) {
             this.noteBuffer.push(midi);
+
+            // Circular buffer: remove oldest if exceeds max length
             if (this.noteBuffer.length > this.maxBufferLength) {
                 this.noteBuffer.shift();
             }
+
+            // Debug log (optional, can comment out)
+            // console.log('[AI Harmonizer] Buffered note:', midi, `(${this.noteBuffer.length}/${this.maxBufferLength})`);
         }
     }
 
     /**
-     * Ask MusicRNN to hallucinate a backing track based on recent notes
+     * Convert frequency to MIDI number
+     * Formula: MIDI = 69 + 12 * log2(freq / 440)
+     * @param {number} freq - Frequency in Hz
+     * @returns {number} MIDI note number (rounded)
+     */
+    _freqToMidi(freq) {
+        return Math.round(69 + 12 * Math.log2(freq / 440));
+    }
+
+    /**
+     * Generate backing sequence using MusicRNN
      */
     async _generateBackingSequence() {
-        if (this.noteBuffer.length < 5) return; // Not enough context
-        
+        // Need at least 5 notes for meaningful context
+        if (this.noteBuffer.length < 5) {
+            console.log('[AI Harmonizer] Not enough notes buffered (need 5, have', this.noteBuffer.length, ')');
+            return;
+        }
+
         this.isGenerating = true;
         this._updateStatus('processing', 'AI Thinking...');
 
         try {
-            // Convert simple pitch buffer to NoteSequence format
-            // This is a simplified representation
+            // Create NoteSequence from buffer
             const inputSequence = {
                 notes: this.noteBuffer.map((pitch, index) => ({
                     pitch: pitch,
-                    startTime: index * 0.25,
-                    endTime: (index + 1) * 0.25
+                    startTime: index * 0.25, // 16th notes
+                    endTime: (index + 1) * 0.25,
+                    velocity: 80
                 })),
                 totalTime: this.noteBuffer.length * 0.25,
                 quantizationInfo: { stepsPerQuarter: 4 }
             };
 
-            // The Magic: Continue the sequence
-            // We ask for 16 steps (1 bar) of continuation
+            console.log('[AI Harmonizer] Input sequence:', inputSequence.notes.length, 'notes');
+
+            // Generate continuation (16 steps ≈ 1 bar)
             const rnnSteps = 16;
-            const result = await this.model.continueSequence(inputSequence, rnnSteps, this.temperature);
+            const result = await this.model.continueSequence(
+                inputSequence,
+                rnnSteps,
+                this.temperature
+            );
+
+            console.log('[AI Harmonizer] ✓ Generated', result?.notes?.length || 0, 'notes');
 
             // Play the result
-            if (result && result.notes) {
+            if (result && result.notes && result.notes.length > 0) {
                 this._playBacking(result.notes);
+                this._updateStatus('ready', 'AI Jamming ♪');
+            } else {
+                console.warn('[AI Harmonizer] No notes generated');
+                this._updateStatus('ready', 'AI Listening...');
             }
 
-            this._updateStatus('ready', 'AI Jamming');
-
-        } catch (e) {
-            console.warn('AI Generation hiccup:', e);
+        } catch (error) {
+            console.error('[AI Harmonizer] ❌ Generation error:', error);
+            this._updateStatus('ready', 'AI Listening...');
         } finally {
             this.isGenerating = false;
         }
     }
 
     /**
-     * Play the generated notes using the local backing synth
+     * Play generated notes using backing synth
      */
     _playBacking(notes) {
-        if (!Tone) {
+        if (!Tone || !this.backingSynth) {
+            console.warn('[AI Harmonizer] Cannot play: Tone.js or synth not available');
             return;
         }
 
         const now = Tone.now();
-        
-        // Play each note in the sequence
+
+        console.log('[AI Harmonizer] 🎵 Playing', notes.length, 'notes');
+
         notes.forEach(note => {
-            const duration = note.endTime - note.startTime;
-            // Scale time to match current approximate tempo (fixed for now)
-            const timeOffset = (note.startTime - notes[0].startTime) * 0.5; 
-            
-            // Convert MIDI to Frequency
+            const duration = (note.endTime - note.startTime) || 0.25;
+            const timeOffset = (note.startTime - notes[0].startTime) * 0.5; // Slow down tempo
+
+            // Convert MIDI to frequency
             const freq = Tone.Frequency(note.pitch, "midi");
-            
-            // Trigger
-            this.backingSynth.triggerAttackRelease(freq, duration, now + timeOffset + 0.1);
+
+            // Trigger note
+            this.backingSynth.triggerAttackRelease(
+                freq,
+                duration,
+                now + timeOffset + 0.1 // Small delay to avoid click
+            );
         });
     }
 
     /**
-     * Helper to load the script dynamically
+     * Update status and notify listeners
      */
-    _loadScript(src) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-
     _updateStatus(status, message) {
         this.status = status;
+        console.log(`[AI Harmonizer] Status: ${status} - ${message}`);
+
         if (this.onStatusChange) {
             this.onStatusChange({ status, message });
         }
