@@ -26,6 +26,7 @@
  * @property {number} clarityThreshold - YIN 清晰度阈值 (0-1), 影响: 灵敏度↑/误检↑
  * @property {number} minFrequency - 最低检测频率 (Hz), 影响: 检测范围/CPU
  * @property {number} maxFrequency - 最高检测频率 (Hz), 影响: 检测范围/CPU
+ * @property {number} frequencyCorrection - 音高校正系数 (默认 1.0), 用于补偿采样率偏差或设备特性
  */
 
 /**
@@ -121,7 +122,8 @@ const DEFAULT_CONFIG = {
     minFrequency: 50,            // 🔥 修复: 50Hz (G1) - 覆盖男低音 C2(65Hz) + 容差
     maxFrequency: 1500,          // 🔥 修复: 1500Hz (覆盖女高音 + 唱歌高音区)
     minVolumeThreshold: 0.0001,  // 🔥 紧急: 0.001 → 0.0001 (适配极低音量虚拟设备)
-    minConfidence: 0.01          // 🔥 紧急: 0.05 → 0.01 (极限放宽)
+    minConfidence: 0.01,         // 🔥 紧急: 0.05 → 0.01 (极限放宽)
+    frequencyCorrection: 1.0     // 音高校正系数 (1.0 = 无校正, >1.0 = 提高音高, <1.0 = 降低音高)
   },
 
   // ─────────────────────────────────────────────────────────────────────────

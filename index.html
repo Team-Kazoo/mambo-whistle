@@ -311,8 +311,24 @@
             <div class="mb-8">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Audio Input & Output</h3>
                 <div class="space-y-4">
-                    <!-- Input -->
+                    <!-- Input Source Type -->
                     <div>
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            Input Source
+                        </label>
+                        <div class="relative">
+                            <select id="audioInputSourceSelect" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+                                <option value="microphone">Microphone</option>
+                                <option value="usb">USB Device</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Input Device (Microphone) -->
+                    <div id="microphoneInputGroup">
                         <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                             Microphone
@@ -325,6 +341,15 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
+                    </div>
+                    <!-- USB Device Connection -->
+                    <div id="usbInputGroup" class="hidden">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+                            USB Device
+                        </label>
+                        <p class="text-xs text-gray-500 mt-2">USB device will be connected automatically when you start the engine.</p>
+                        <p id="usbStatus" class="text-xs text-gray-500 mt-2 hidden"></p>
                     </div>
 
                     <!-- Output -->
@@ -868,6 +893,9 @@
     <script src="js/lib/tone.js"></script>
     <script src="js/lib/pitchfinder-browser.js"></script>
     <!-- audio-config.js removed (deprecated) -->
+    <!-- USB Audio Support -->
+    <script src="js/usb-audio-receiver.js"></script>
+    <script src="js/usb-audio-source.js"></script>
     <script src="js/audio-io.js"></script>
     <script src="js/pitch-detector.js"></script>
     <script src="js/synthesizer.js"></script>

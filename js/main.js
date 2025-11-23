@@ -98,9 +98,13 @@ class KazooApp {
             instrumentBtns: document.querySelectorAll('.instrument-btn'),
 
             // Device Selection
+            audioInputSourceSelect: document.getElementById('audioInputSourceSelect'),
             audioInputSelect: document.getElementById('audioInputSelect'),
             audioOutputSelect: document.getElementById('audioOutputSelect'),
             refreshDevicesBtn: document.getElementById('refreshDevicesBtn'),
+            usbStatus: document.getElementById('usbStatus'),
+            microphoneInputGroup: document.getElementById('microphoneInputGroup'),
+            usbInputGroup: document.getElementById('usbInputGroup'),
 
             // Auto-Tune UI
             autoTuneToggle: document.getElementById('autoTuneToggle'),
@@ -257,6 +261,48 @@ class KazooApp {
         if (this.ui.settingsBtn) this.ui.settingsBtn.addEventListener('click', openSettings);
         if (this.ui.closeSettingsBtn) this.ui.closeSettingsBtn.addEventListener('click', closeSettings);
         if (this.ui.settingsBackdrop) this.ui.settingsBackdrop.addEventListener('click', closeSettings);
+
+        // Input Source Selection (Microphone/USB)
+        if (this.ui.audioInputSourceSelect) {
+            this.ui.audioInputSourceSelect.addEventListener('change', async (e) => {
+                const inputSource = e.target.value;
+                console.log(`[Main] Input source changed to: ${inputSource}`);
+
+                // 保存输入模式到 localStorage
+                try {
+                    localStorage.setItem('kazoo:lastInputSource', inputSource);
+                } catch (err) {
+                    console.warn('[Main] Unable to save input source preference:', err);
+                }
+
+                // 更新 UI 显示
+                if (inputSource === 'usb') {
+                    this.ui.microphoneInputGroup?.classList.add('hidden');
+                    this.ui.usbInputGroup?.classList.remove('hidden');
+                } else {
+                    this.ui.microphoneInputGroup?.classList.remove('hidden');
+                    this.ui.usbInputGroup?.classList.add('hidden');
+                }
+
+                // 如果正在运行，需要重启音频系统
+                if (this.isRunning && this.audioIO) {
+                    console.log('[Main] Restarting audio to apply new input source...');
+                    const originalText = this.ui.systemStatus.textContent;
+                    this.ui.systemStatus.textContent = 'Switching Input Source...';
+
+                    try {
+                        await this.audioIO.stop();
+                        this.audioIO.configure({ inputSource: inputSource });
+                        await this.audioIO.start();
+                        console.log('[Main] Audio restarted with new input source.');
+                        this.ui.systemStatus.textContent = originalText;
+                    } catch (err) {
+                        console.error('[Main] Failed to switch input source:', err);
+                        this._showError('Failed to switch input source: ' + err.message);
+                    }
+                }
+            });
+        }
 
         // Device Selection
         if (this.ui.audioInputSelect) {
@@ -616,6 +662,110 @@ class KazooApp {
     }
 
     /**
+     * Connect USB audio device
+     */
+    async _connectUsbDevice() {
+        // 检查类是否可用
+        const UsbAudioReceiverClass = window.UsbAudioReceiver || (typeof UsbAudioReceiver !== 'undefined' ? UsbAudioReceiver : null);
+        const UsbAudioSourceClass = window.UsbAudioSource || (typeof UsbAudioSource !== 'undefined' ? UsbAudioSource : null);
+        
+        if (!UsbAudioReceiverClass) {
+            this._showError('UsbAudioReceiver 类未找到。请确保已加载 usb-audio-receiver.js 脚本。');
+            console.error('[Main] 可用的全局对象:', Object.keys(window).filter(k => k.includes('Usb')));
+            return;
+        }
+        
+        if (!UsbAudioSourceClass) {
+            this._showError('UsbAudioSource 类未找到。请确保已加载 usb-audio-source.js 脚本。');
+            console.error('[Main] 可用的全局对象:', Object.keys(window).filter(k => k.includes('Usb')));
+            return;
+        }
+        
+        if (!UsbAudioReceiverClass.isSupported()) {
+            this._showError('浏览器不支持 Web Serial API。请使用 Chrome 89+、Edge 89+ 或 Opera 75+。');
+            return;
+        }
+
+        const status = this.ui.usbStatus;
+
+        try {
+            // 更新状态显示
+            if (status) {
+                status.textContent = '请选择 USB 设备...';
+                status.classList.remove('hidden');
+            }
+
+            // 如果 AudioIO 已创建，使用它连接 USB
+            if (this.audioIO) {
+                // 请求串口权限
+                const receiver = new UsbAudioReceiverClass({
+                    sampleRate: this.config.audio.sampleRate || 48000,
+                    baudrate: 9216000,
+                    onError: (error) => {
+                        console.error('[Main] USB 接收错误:', error);
+                        this._showError('USB 音频接收错误: ' + error.message);
+                    },
+                    onStats: (stats) => {
+                        if (this.config.performance.enableStats) {
+                            console.log('[Main] USB 统计:', stats);
+                        }
+                    }
+                });
+
+                await receiver.connect({ baudRate: 9216000 });
+                
+                // 连接到 AudioIO
+                await this.audioIO.connectUsbPort(receiver.port);
+
+                // 更新 UI
+                if (status) {
+                    status.textContent = 'USB 设备已连接';
+                    status.classList.remove('text-gray-500');
+                    status.classList.add('text-green-600');
+                }
+
+                // 保存接收器引用
+                this.usbReceiver = receiver;
+
+                console.log('[Main] USB 设备已连接');
+            } else {
+                // AudioIO 未创建，先创建它
+                this.audioIO = new AudioIO();
+                this.audioIO.configure({
+                    inputSource: 'usb',
+                    sampleRate: this.config.audio.sampleRate || 48000,
+                    appConfig: this.config
+                });
+
+                const receiver = new UsbAudioReceiverClass({
+                    sampleRate: this.config.audio.sampleRate || 48000,
+                    baudrate: 9216000
+                });
+
+                await receiver.connect({ baudRate: 9216000 });
+                await this.audioIO.connectUsbPort(receiver.port);
+
+                if (status) {
+                    status.textContent = 'USB 设备已连接（请点击 Start 开始）';
+                    status.classList.remove('text-gray-500');
+                    status.classList.add('text-green-600');
+                }
+
+                this.usbReceiver = receiver;
+            }
+        } catch (error) {
+            console.error('[Main] USB 连接失败:', error);
+            this._showError('USB 连接失败: ' + error.message);
+            
+            if (status) {
+                status.textContent = '连接失败: ' + error.message;
+                status.classList.remove('text-gray-500', 'text-green-600');
+                status.classList.add('text-red-600');
+            }
+        }
+    }
+
+    /**
      * Refresh audio device list
      * Uses a temporary AudioIO instance to enumerate devices
      */
@@ -782,10 +932,26 @@ class KazooApp {
             const savedOutput = localStorage.getItem('kazoo:lastOutputDeviceId');
             const savedInputLabel = localStorage.getItem('kazoo:lastInputDeviceLabel');
             const savedOutputLabel = localStorage.getItem('kazoo:lastOutputDeviceLabel');
+            const savedInputSource = localStorage.getItem('kazoo:lastInputSource');
+            
             if (savedInput) this.selectedInputId = savedInput;
             if (savedOutput) this.selectedOutputId = savedOutput;
             if (savedInputLabel) this.lastKnownInputLabel = savedInputLabel;
             if (savedOutputLabel) this.lastKnownOutputLabel = savedOutputLabel;
+            
+            // 恢复输入模式选择
+            if (savedInputSource && this.ui.audioInputSourceSelect) {
+                this.ui.audioInputSourceSelect.value = savedInputSource;
+                // 更新 UI 显示
+                if (savedInputSource === 'usb') {
+                    this.ui.microphoneInputGroup?.classList.add('hidden');
+                    this.ui.usbInputGroup?.classList.remove('hidden');
+                } else {
+                    this.ui.microphoneInputGroup?.classList.remove('hidden');
+                    this.ui.usbInputGroup?.classList.add('hidden');
+                }
+                console.log(`[Main] 已恢复输入模式: ${savedInputSource}`);
+            }
         } catch (err) {
             console.warn('[Main] Unable to load saved device preferences:', err);
         }
@@ -945,6 +1111,9 @@ class KazooApp {
         if (!this.audioIO) {
             this.audioIO = new AudioIO();
 
+            // 获取输入源类型
+            const inputSource = this.ui.audioInputSourceSelect?.value || 'microphone';
+
             //  使用集中式配置 + 下发到 Worklet
             this.audioIO.configure({
                 useWorklet: this.config.audio.useWorklet,
@@ -955,6 +1124,7 @@ class KazooApp {
                 latencyHint: 'interactive',
                 debug: this.config.performance.enableStats,
                 // Device Selection
+                inputSource: inputSource,   // 'microphone' | 'usb'
                 inputDeviceId: this.selectedInputId,
                 outputDeviceId: this.selectedOutputId,
                 //  P0 修复: 传递完整配置对象,供 AudioIO 序列化并下发到 Worklet

@@ -248,7 +248,8 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
             minFrequency: 80,
             maxFrequency: 800,
             smoothingSize: 5,
-            minVolumeThreshold: 0.001
+            minVolumeThreshold: 0.001,
+            frequencyCorrection: 1.0  // 音高校正系数，默认无校正
         };
 
         this.detector = this._createYINDetector(this.config);
@@ -353,9 +354,54 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
     process(inputs, outputs, parameters) {
         const startTime = currentTime;
         const input = inputs[0];
-        if (!input || !input[0]) return true;
+        if (!input || !input[0]) {
+            // 调试：检查输入是否为空
+            if (this.stats.framesProcessed % 1000 === 0) {
+                this.port.postMessage({
+                    type: 'debug',
+                    data: { message: 'No input data', inputsLength: inputs.length, input0Length: input ? input.length : 0 }
+                });
+            }
+            return true;
+        }
 
         const audioBuffer = input[0];
+        
+        // 调试：检查音频缓冲区是否为空或全零（更详细的检查）
+        if (this.stats.framesProcessed % 1000 === 0) {
+            let sum = 0;
+            let maxAbs = 0;
+            for (let i = 0; i < audioBuffer.length; i++) {
+                const abs = Math.abs(audioBuffer[i]);
+                sum += abs;
+                if (abs > maxAbs) maxAbs = abs;
+            }
+            const avg = sum / audioBuffer.length;
+            if (sum === 0 || avg < 0.000001) {
+                this.port.postMessage({
+                    type: 'debug',
+                    data: { 
+                        message: 'Audio buffer is empty or all zeros', 
+                        bufferLength: audioBuffer.length,
+                        sum: sum,
+                        avg: avg,
+                        maxAbs: maxAbs
+                    }
+                });
+            } else {
+                // 有数据时也报告一次，确认数据流正常
+                this.port.postMessage({
+                    type: 'debug',
+                    data: { 
+                        message: 'Audio buffer has data', 
+                        bufferLength: audioBuffer.length,
+                        sum: sum,
+                        avg: avg.toFixed(6),
+                        maxAbs: maxAbs.toFixed(6)
+                    }
+                });
+            }
+        }
         
         try {
             const volume = this._calculateRMS(audioBuffer);
@@ -366,7 +412,9 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
                     const frequency = this.detector(this.accumulationBuffer);
 
                     if (frequency && frequency >= 20 && frequency <= 2000) {
-                        this.pitchHistory.push(frequency);
+                        // 应用音高校正系数
+                        const correctedFrequency = frequency * (this.config.frequencyCorrection || 1.0);
+                        this.pitchHistory.push(correctedFrequency);
                         if (this.pitchHistory.length > this.config.smoothingSize) this.pitchHistory.shift();
 
                         const smoothedFrequency = this._getSmoothedPitch();
@@ -391,7 +439,7 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
 
                         const pitchInfo = {
                             frequency: smoothedFrequency,
-                            rawFrequency: frequency,
+                            rawFrequency: correctedFrequency,
                             note: noteInfo.note,
                             octave: noteInfo.octave,
                             cents: noteInfo.cents,

@@ -24,6 +24,11 @@ class AudioIO {
         // 当前使用的模式
         this.mode = null; // 'worklet' | 'script-processor'
 
+        // USB 音频输入相关
+        this.usbReceiver = null;
+        this.usbSource = null;
+        this.inputSource = 'microphone'; // 'microphone' | 'usb'
+
         // 配置 (从 audio-config.js 或默认值)
         this.config = {
             sampleRate: 44100,
@@ -32,7 +37,8 @@ class AudioIO {
             useWorklet: true,        //  启用 AudioWorklet 低延迟模式
             workletFallback: true,   // 自动回退到 ScriptProcessor
             latencyHint: 'interactive',
-            debug: false             // 调试模式
+            debug: false,            // 调试模式
+            inputSource: 'microphone' // 输入源: 'microphone' | 'usb'
         };
 
         //  存储主线程的集中式配置 (用于序列化到 Worklet)
@@ -115,6 +121,7 @@ class AudioIO {
      * @param {string} options.latencyHint - 延迟提示
      * @param {string} options.inputDeviceId - 输入设备 ID
      * @param {string} options.outputDeviceId - 输出设备 ID
+     * @param {string} options.inputSource - 输入源 ('microphone' | 'usb')
      * @param {Object} options.appConfig: 集中式配置对象 (来自 configManager)
      */
     configure(options = {}) {
@@ -126,10 +133,22 @@ class AudioIO {
             console.log('[AudioIO]  已接收集中式配置');
         }
 
+        // 更新输入源（需要在合并配置之前设置，以便后续判断）
+        if (options.inputSource) {
+            this.inputSource = options.inputSource;
+            console.log(`[AudioIO] 输入源设置为: ${this.inputSource}`);
+        }
+
         this.config = {
             ...this.config,
             ...options
         };
+
+        // USB 音频设备固定使用 48000Hz 采样率（与 ESP32 设备匹配）
+        if (this.inputSource === 'usb') {
+            this.config.sampleRate = 48000;
+            console.log('[AudioIO] USB 音频模式：强制使用 48000Hz 采样率（与设备匹配）');
+        }
 
         // 验证配置
         this._validateConfig();
@@ -160,8 +179,13 @@ class AudioIO {
                 await this.setAudioOutputDevice(this.config.outputDeviceId);
             }
 
-            // 2. 请求麦克风权限 (传入配置的 inputDeviceId)
-            await this._requestMicrophone(this.config.inputDeviceId);
+            // 2. 根据输入源类型初始化输入
+            if (this.inputSource === 'usb') {
+                await this._setupUsbAudio();
+            } else {
+                // 默认使用麦克风
+                await this._requestMicrophone(this.config.inputDeviceId);
+            }
 
             // 3. 决定使用哪种处理模式
             const useWorklet = this.config.useWorklet && this._supportsAudioWorklet();
@@ -174,6 +198,14 @@ class AudioIO {
                 await this._setupAudioWorklet();
             } else {
                 await this._setupScriptProcessor();
+            }
+
+            // 4.5 如果使用 USB 音频，启动 USB 音频源
+            // 注意：必须在连接节点之后启动，确保 ScriptProcessorNode 能触发回调
+            if (this.inputSource === 'usb' && this.usbSource) {
+                // USB 音频源应该在节点连接完成后启动
+                // 但为了确保连接正确，我们在连接后再次检查
+                console.log('[AudioIO] USB 音频源将在节点连接后启动');
             }
 
             this.isRunning = true;
@@ -206,7 +238,7 @@ class AudioIO {
     /**
      * 停止音频系统
      */
-    stop() {
+    async stop() {
         if (!this.isRunning) {
             console.warn('[AudioIO] 音频系统未运行');
             return;
@@ -215,6 +247,11 @@ class AudioIO {
         console.log('🛑 [AudioIO] 停止音频系统');
 
         try {
+            // 停止 USB 音频源（如果使用）
+            if (this.usbSource) {
+                await this.usbSource.stop();
+            }
+
             // 断开所有节点
             if (this.processorNode) {
                 this.processorNode.disconnect();
@@ -236,6 +273,11 @@ class AudioIO {
             if (this.stream) {
                 this.stream.getTracks().forEach(track => track.stop());
                 this.stream = null;
+            }
+
+            // 关闭 USB 接收器（如果使用）
+            if (this.usbReceiver) {
+                await this.usbReceiver.close();
             }
 
             this.isRunning = false;
@@ -360,7 +402,18 @@ class AudioIO {
     async destroy() {
         console.log('[AudioIO] 销毁音频系统');
 
-        this.stop();
+        await this.stop();
+
+        // 清理 USB 资源
+        if (this.usbSource) {
+            await this.usbSource.stop();
+            this.usbSource = null;
+        }
+
+        if (this.usbReceiver) {
+            await this.usbReceiver.close();
+            this.usbReceiver = null;
+        }
 
         if (this.audioContext) {
             await this.audioContext.close();
@@ -417,6 +470,9 @@ class AudioIO {
             // 音量阈值 (从集中式配置读取)
             minVolumeThreshold: Number(config.pitchDetector?.minVolumeThreshold) || 0.0001,  // 🔥 强制转为数字并提供安全回退
 
+            // 音高校正系数 (用于补偿采样率偏差或设备特性)
+            frequencyCorrection: Number(config.pitchDetector?.frequencyCorrection) || 1.0,
+
             //  EMA 滤波器参数 (用于 Worklet 内部平滑)
             volumeAlpha: config.smoothing?.volume?.alpha ?? 0.3,
             brightnessAlpha: config.smoothing?.brightness?.alpha ?? 0.3,
@@ -456,20 +512,38 @@ class AudioIO {
             throw new Error('浏览器不支持 Web Audio API');
         }
 
-        this.audioContext = new AudioContextClass({
-            latencyHint: this.config.latencyHint,
-            sampleRate: this.config.sampleRate
-        });
-
-        // 确保 AudioContext 处于运行状态
-        if (this.audioContext.state === 'suspended') {
-            await this.audioContext.resume();
+        // 如果 AudioContext 已存在但采样率不匹配，需要重新创建
+        if (this.audioContext && this.audioContext.sampleRate !== this.config.sampleRate) {
+            console.warn(`[AudioIO] AudioContext 采样率不匹配 (${this.audioContext.sampleRate}Hz vs ${this.config.sampleRate}Hz)，将重新创建`);
+            // 关闭旧的 AudioContext
+            if (this.audioContext.state !== 'closed') {
+                await this.audioContext.close();
+            }
+            this.audioContext = null;
         }
 
-        console.log(' AudioContext 已创建:', {
-            sampleRate: this.audioContext.sampleRate,
-            state: this.audioContext.state
-        });
+        // 如果 AudioContext 不存在，创建新的
+        if (!this.audioContext) {
+            this.audioContext = new AudioContextClass({
+                latencyHint: this.config.latencyHint,
+                sampleRate: this.config.sampleRate
+            });
+
+            // 确保 AudioContext 处于运行状态
+            if (this.audioContext.state === 'suspended') {
+                await this.audioContext.resume();
+            }
+
+            console.log(' AudioContext 已创建:', {
+                sampleRate: this.audioContext.sampleRate,
+                state: this.audioContext.state
+            });
+        } else {
+            console.log(' AudioContext 已存在:', {
+                sampleRate: this.audioContext.sampleRate,
+                state: this.audioContext.state
+            });
+        }
     }
 
     /**
@@ -553,6 +627,134 @@ class AudioIO {
     }
 
     /**
+     * 设置 USB 音频输入
+     * @private
+     */
+    async _setupUsbAudio() {
+        console.log('🔌 [AudioIO] 设置 USB 音频输入...');
+
+        // 检查 Web Serial API 支持
+        const UsbAudioReceiverClass = window.UsbAudioReceiver || (typeof UsbAudioReceiver !== 'undefined' ? UsbAudioReceiver : null);
+        const UsbAudioSourceClass = window.UsbAudioSource || (typeof UsbAudioSource !== 'undefined' ? UsbAudioSource : null);
+
+        if (!UsbAudioReceiverClass || !UsbAudioReceiverClass.isSupported()) {
+            throw new Error(
+                '浏览器不支持 Web Serial API\n\n' +
+                '请使用支持 Web Serial API 的浏览器:\n' +
+                '• Chrome 89+\n' +
+                '• Edge 89+\n' +
+                '• Opera 75+'
+            );
+        }
+
+        if (!UsbAudioSourceClass) {
+            throw new Error('UsbAudioSource 类未找到。请确保已加载 usb-audio-source.js');
+        }
+
+        // 创建 USB 音频接收器
+        if (!this.usbReceiver) {
+            this.usbReceiver = new UsbAudioReceiverClass({
+                sampleRate: this.config.sampleRate || 48000,
+                baudrate: 9216000,
+                onFrame: (samples) => {
+                    // USB 音频帧将通过 UsbAudioSource 转换为 Web Audio API 格式
+                    // 这里不需要直接处理
+                },
+                onError: (error) => {
+                    console.error('[AudioIO] USB 音频接收错误:', error);
+                    this._notifyError('usb-receiver', error);
+                },
+                onStats: (stats) => {
+                    if (this.config.debug) {
+                        console.log('[AudioIO] USB 接收统计:', stats);
+                    }
+                }
+            });
+        }
+
+        // 请求串口连接
+        try {
+            await this.usbReceiver.connect({
+                baudRate: 9216000
+            });
+        } catch (error) {
+            throw new Error(`USB 串口连接失败: ${error.message}`);
+        }
+
+        // 创建 USB 音频源
+        // 注意：ScriptProcessorNode 需要至少 256 的缓冲区大小
+        // 但为了与 WorkletNode 的 128 缓冲区匹配，我们使用 256（最接近的 2 的幂次方）
+        // 这样可以减少缓冲区大小不匹配导致的问题
+        // 实际上，ScriptProcessorNode 的最小值是 256，所以不能使用 128
+        // 但 256 是 128 的 2 倍，Web Audio API 应该能自动处理
+        const usbBufferSize = 256; // 固定使用 256（ScriptProcessorNode 的最小值）
+        
+        this.usbSource = new UsbAudioSourceClass(this.audioContext, this.usbReceiver, {
+            sampleRate: this.config.sampleRate || 48000,
+            bufferSize: usbBufferSize
+        });
+
+        // 使用 USB 音频源的输出节点作为 sourceNode
+        this.sourceNode = this.usbSource.getOutputNode();
+
+        console.log('✅ USB 音频输入已设置');
+    }
+
+    /**
+     * 连接到指定的 USB 串口（如果已授权）
+     * @param {SerialPort} port - 已授权的串口对象
+     */
+    async connectUsbPort(port) {
+        const UsbAudioReceiverClass = window.UsbAudioReceiver || (typeof UsbAudioReceiver !== 'undefined' ? UsbAudioReceiver : null);
+        const UsbAudioSourceClass = window.UsbAudioSource || (typeof UsbAudioSource !== 'undefined' ? UsbAudioSource : null);
+
+        if (!UsbAudioReceiverClass) {
+            const availableKeys = Object.keys(window).filter(k => k.toLowerCase().includes('usb')).join(', ');
+            console.error('[AudioIO] 可用的全局对象:', availableKeys || '无');
+            throw new Error('UsbAudioReceiver 类未找到。请确保已加载 usb-audio-receiver.js 脚本。');
+        }
+
+        if (!UsbAudioSourceClass) {
+            const availableKeys = Object.keys(window).filter(k => k.toLowerCase().includes('usb')).join(', ');
+            console.error('[AudioIO] 可用的全局对象:', availableKeys || '无');
+            throw new Error('UsbAudioSource 类未找到。请确保已加载 usb-audio-source.js 脚本。');
+        }
+
+        if (!this.usbReceiver) {
+            this.usbReceiver = new UsbAudioReceiverClass({
+                sampleRate: this.config.sampleRate || 48000,
+                baudrate: 9216000,
+                onFrame: (samples) => {
+                    // USB 音频帧将通过 UsbAudioSource 转换为 Web Audio API 格式
+                },
+                onError: (error) => {
+                    console.error('[AudioIO] USB 音频接收错误:', error);
+                    this._notifyError('usb-receiver', error);
+                },
+                onStats: (stats) => {
+                    if (this.config.debug) {
+                        console.log('[AudioIO] USB 接收统计:', stats);
+                    }
+                }
+            });
+        }
+
+        await this.usbReceiver.connectToPort(port, {
+            baudRate: 9216000
+        });
+
+        // 如果音频系统已运行，创建 USB 音频源
+        if (this.audioContext && this.isRunning) {
+            this.usbSource = new UsbAudioSourceClass(this.audioContext, this.usbReceiver, {
+                sampleRate: this.config.sampleRate || 48000,
+                bufferSize: this.config.workletBufferSize || 128
+            });
+            this.sourceNode = this.usbSource.getOutputNode();
+            await this.usbSource.start();
+        }
+    }
+
+    /**
      * 统一错误处理 helper
      */
     _handleGetUserMediaError(error) {
@@ -617,11 +819,34 @@ class AudioIO {
             // 5. 连接节点链路
             //  仅用于音频分析，不连接到 destination (避免直接回放麦克风输入)
             // 合成器会单独连接到 destination 输出音色
-            this.sourceNode.connect(this.processorNode);
-            // REMOVED: this.processorNode.connect(this.audioContext.destination);
-            console.log('🔗 AudioWorklet 链路: Mic → WorkletNode (分析用，不直接播放)');
+            // 对于 USB 音频源，sourceNode 是 outputGain，需要连接到 processorNode
+            if (this.inputSource === 'usb' && this.usbSource) {
+                // USB 音频源：ScriptProcessorNode → processorNode → (静音 Gain) → destination
+                // ScriptProcessorNode 必须连接到 destination 才能触发回调
+                // 直接连接 ScriptProcessorNode 到 WorkletNode
+                const usbOutputNode = this.usbSource.getOutputNode();
+                usbOutputNode.connect(this.processorNode);
+                
+                // WorkletNode 也需要连接到 destination（通过静音 gain）才能工作
+                const silentGain = this.audioContext.createGain();
+                silentGain.gain.value = 0; // 静音
+                this.processorNode.connect(silentGain);
+                silentGain.connect(this.audioContext.destination);
+                
+                console.log('🔗 AudioWorklet 链路: USB ScriptProcessor → WorkletNode → SilentGain → Destination');
+            } else {
+                // 麦克风：sourceNode → processorNode
+                this.sourceNode.connect(this.processorNode);
+                console.log('🔗 AudioWorklet 链路: Mic → WorkletNode (分析用，不直接播放)');
+            }
 
             console.log(' AudioWorklet 处理链路已建立');
+            
+            // 4.6 如果使用 USB 音频，现在启动 USB 音频源（在连接完成后）
+            if (this.inputSource === 'usb' && this.usbSource && !this.usbSource.isRunning) {
+                await this.usbSource.start();
+                console.log('[AudioIO] ✅ USB 音频源已启动（在节点连接后）');
+            }
 
         } catch (error) {
             console.error(' AudioWorklet 设置失败:', error);
@@ -710,6 +935,11 @@ class AudioIO {
                 console.log('[AudioIO] Worklet 配置已应用');
                 break;
 
+            case 'debug':
+                // Worklet 调试信息
+                console.log('[AudioIO] Worklet Debug:', data);
+                break;
+
             default:
                 if (this.config.debug) {
                     console.log('[AudioIO] Worklet 消息:', type, data);
@@ -759,9 +989,20 @@ class AudioIO {
         // 使用静音的 GainNode 避免直接回放麦克风输入（防止回声）
         // 合成器会单独连接到 destination 输出音色
         const silentGain = this.audioContext.createGain();
-        silentGain.gain.value = 0;  // 静音（不播放麦克风输入）
+        silentGain.gain.value = 0;  // 静音（不播放输入）
 
-        this.sourceNode.connect(this.processorNode);
+        // 对于 USB 音频源，直接连接 ScriptProcessorNode 到 processorNode
+        if (this.inputSource === 'usb' && this.usbSource) {
+            // USB 音频源：ScriptProcessorNode → processorNode → silentGain → destination
+            const usbOutputNode = this.usbSource.getOutputNode();
+            usbOutputNode.connect(this.processorNode);
+            console.log('🔗 ScriptProcessor 链路: USB ScriptProcessor → ProcessorNode → SilentGain → Destination');
+        } else {
+            // 麦克风：sourceNode → processorNode → silentGain → destination
+            this.sourceNode.connect(this.processorNode);
+            console.log('🔗 ScriptProcessor 链路: Mic → ProcessorNode → SilentGain → Destination');
+        }
+        
         this.processorNode.connect(silentGain);
         silentGain.connect(this.audioContext.destination);
 
