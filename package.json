@@ -5,8 +5,11 @@
   "description": "Mambo Whistle: Makes Any Mouth Become Orchestra. A real-time neural vocal synthesis engine with embedded hardware.",
   "main": "index.html",
   "scripts": {
+    "predev": "./kill-port.sh 3000 2>/dev/null || true",
     "dev": "npx serve . -p 3000",
+    "prestart": "./kill-port.sh 3000 2>/dev/null || true",
     "start": "npx serve . -p 3000",
+    "clean": "./kill-port.sh 3000",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:ui": "vitest --ui",
