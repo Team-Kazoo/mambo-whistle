@@ -1,0 +1,19 @@
+# USB Audio Stream - Python Dependencies
+#
+# Install with:
+#   pip install -r requirements.txt
+
+# Core dependencies (required)
+pyserial>=3.5
+numpy>=1.24.0
+
+# Optional: For WAV file recording
+soundfile>=0.12.1
+
+# Optional: For real-time audio playback
+# Note: pyaudio requires portaudio system library
+#   macOS: brew install portaudio
+#   Linux: apt-get install portaudio19-dev
+#   Then: pip install pyaudio
+# pyaudio>=0.2.13
+
