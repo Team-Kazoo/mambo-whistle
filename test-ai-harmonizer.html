@@ -192,28 +192,32 @@
             setStatus('Generating harmony from C major scale...', 'warning');
 
             try {
-                // Create input sequence (C major scale) with chord progression
-                const inputSequence = {
+                // Create unquantized note sequence (C major scale)
+                const unquantizedSeq = {
                     notes: [
-                        { pitch: 60, startTime: 0.0, endTime: 0.25, velocity: 80 },   // C4
-                        { pitch: 62, startTime: 0.25, endTime: 0.5, velocity: 80 },   // D4
-                        { pitch: 64, startTime: 0.5, endTime: 0.75, velocity: 80 },   // E4
-                        { pitch: 65, startTime: 0.75, endTime: 1.0, velocity: 80 },   // F4
-                        { pitch: 67, startTime: 1.0, endTime: 1.25, velocity: 80 },   // G4
-                        { pitch: 69, startTime: 1.25, endTime: 1.5, velocity: 80 },   // A4
-                        { pitch: 71, startTime: 1.5, endTime: 1.75, velocity: 80 },   // B4
-                        { pitch: 72, startTime: 1.75, endTime: 2.0, velocity: 80 }    // C5
+                        { pitch: 60, startTime: 0.0, endTime: 0.5 },   // C4
+                        { pitch: 62, startTime: 0.5, endTime: 1.0 },   // D4
+                        { pitch: 64, startTime: 1.0, endTime: 1.5 },   // E4
+                        { pitch: 65, startTime: 1.5, endTime: 2.0 },   // F4
+                        { pitch: 67, startTime: 2.0, endTime: 2.5 },   // G4
+                        { pitch: 69, startTime: 2.5, endTime: 3.0 },   // A4
+                        { pitch: 71, startTime: 3.0, endTime: 3.5 },   // B4
+                        { pitch: 72, startTime: 3.5, endTime: 4.0 }    // C5
                     ],
-                    totalTime: 2.0,
-                    quantizationInfo: { stepsPerQuarter: 4 }
+                    totalTime: 4.0
                 };
 
-                log(`Input: C major scale (${inputSequence.notes.length} notes)`);
-                log('Calling model.continueSequence()...');
+                log(`Input: C major scale (${unquantizedSeq.notes.length} notes)`);
+                log('Quantizing sequence with stepsPerQuarter=4...');
 
+                // IMPORTANT: Must quantize using Magenta's quantizeNoteSequence
+                const quantizedSeq = core.sequences.quantizeNoteSequence(unquantizedSeq, 4);
+                log(`✓ Sequence quantized (${quantizedSeq.notes.length} notes)`);
+
+                log('Calling model.continueSequence()...');
                 const startTime = Date.now();
                 const result = await model.continueSequence(
-                    inputSequence,
+                    quantizedSeq,
                     16,  // Generate 16 steps
                     1.1  // Temperature
                 );

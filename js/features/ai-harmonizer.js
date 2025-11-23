@@ -210,24 +210,25 @@ export class AiHarmonizer {
         this._updateStatus('processing', 'AI Thinking...');
 
         try {
-            // Create NoteSequence from buffer
-            const inputSequence = {
+            // Create unquantized NoteSequence from buffer
+            const unquantizedSeq = {
                 notes: this.noteBuffer.map((pitch, index) => ({
                     pitch: pitch,
-                    startTime: index * 0.25, // 16th notes
-                    endTime: (index + 1) * 0.25,
-                    velocity: 80
+                    startTime: index * 0.5,
+                    endTime: (index + 1) * 0.5
                 })),
-                totalTime: this.noteBuffer.length * 0.25,
-                quantizationInfo: { stepsPerQuarter: 4 }
+                totalTime: this.noteBuffer.length * 0.5
             };
 
-            console.log('[AI Harmonizer] Input sequence:', inputSequence.notes.length, 'notes');
+            console.log('[AI Harmonizer] Input sequence:', unquantizedSeq.notes.length, 'notes');
+
+            // Quantize using Magenta's quantizer (CRITICAL!)
+            const quantizedSeq = window.core.sequences.quantizeNoteSequence(unquantizedSeq, 4);
 
             // Generate continuation (16 steps ≈ 1 bar)
             const rnnSteps = 16;
             const result = await this.model.continueSequence(
-                inputSequence,
+                quantizedSeq,
                 rnnSteps,
                 this.temperature
             );
