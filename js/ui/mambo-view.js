@@ -239,29 +239,29 @@ export class MamboView {
     renderAiJam(aiState) {
         if (!aiState || !this.aiJamBtn) return;
 
-        const { status } = aiState;
+        const { status, message } = aiState;
         const icon = document.getElementById('aiJamIcon');
         const text = document.getElementById('aiJamText');
+        const statusText = document.getElementById('aiJamStatus');
         const notice = document.getElementById('aiJamNotice');
 
         switch (status) {
             case 'idle':
-                // Off State
+                // Off State - Google clean style
                 if (text) text.textContent = 'AI Jam';
+                if (statusText) statusText.textContent = 'Off';
                 if (icon) icon.classList.remove('animate-spin', 'animate-pulse');
-                this.aiJamBtn.classList.remove('border-purple-400', 'bg-purple-600/30');
-                this.aiJamBtn.classList.add('border-purple-500/30');
+                this.aiJamBtn.classList.remove('border-blue-500', 'shadow-md', 'border-red-500');
+                this.aiJamBtn.classList.add('border-gray-200', 'bg-white');
                 this.aiJamBtn.disabled = false;
                 break;
 
             case 'loading':
-                // Loading Model
-                if (text) text.textContent = 'Loading...';
-                if (icon) {
-                    icon.classList.remove('animate-pulse');
-                    icon.classList.add('animate-spin');
-                }
-                this.aiJamBtn.classList.add('border-purple-400');
+                // Loading Model - Show spinner on icon
+                if (text) text.textContent = 'AI Jam';
+                if (statusText) statusText.textContent = message || 'Loading model...';
+                if (icon) icon.classList.add('animate-spin');
+                this.aiJamBtn.classList.add('border-blue-500');
                 this.aiJamBtn.disabled = true;
                 // Show notice on first load
                 if (notice && !sessionStorage.getItem('aiJamNoticeSeen')) {
@@ -271,35 +271,39 @@ export class MamboView {
                 break;
 
             case 'ready':
-                // Active - Listening
-                if (text) text.textContent = 'AI Listening';
+                // Active - Listening (Google blue accent)
+                if (text) text.textContent = 'AI Jam';
+                if (statusText) statusText.textContent = 'Listening...';
                 if (icon) {
                     icon.classList.remove('animate-spin');
                     icon.classList.add('animate-pulse');
                 }
-                this.aiJamBtn.classList.remove('border-purple-500/30');
-                this.aiJamBtn.classList.add('border-purple-400', 'bg-purple-600/30');
+                this.aiJamBtn.classList.remove('border-gray-200', 'bg-white');
+                this.aiJamBtn.classList.add('border-blue-500', 'shadow-md');
                 this.aiJamBtn.disabled = false;
                 break;
 
             case 'processing':
                 // Generating harmony
-                if (text) text.textContent = 'AI Jamming';
+                if (text) text.textContent = 'AI Jam';
+                if (statusText) statusText.textContent = 'Generating...';
                 if (icon) icon.classList.add('animate-pulse');
                 break;
 
             case 'error':
-                // Error State
-                if (text) text.textContent = 'AI Error';
+                // Error State - Google red
+                if (text) text.textContent = 'AI Jam';
+                if (statusText) statusText.textContent = message || 'Error - Tap to retry';
                 if (icon) icon.classList.remove('animate-spin', 'animate-pulse');
-                this.aiJamBtn.classList.remove('border-purple-400', 'bg-purple-600/30');
-                this.aiJamBtn.classList.add('border-red-500/50');
+                this.aiJamBtn.classList.remove('border-blue-500', 'border-gray-200');
+                this.aiJamBtn.classList.add('border-red-500');
                 this.aiJamBtn.disabled = false;
                 break;
 
             default:
                 // Fallback to idle
                 if (text) text.textContent = 'AI Jam';
+                if (statusText) statusText.textContent = 'Off';
                 if (icon) icon.classList.remove('animate-spin', 'animate-pulse');
                 this.aiJamBtn.disabled = false;
                 break;
