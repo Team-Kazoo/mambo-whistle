@@ -156,7 +156,7 @@ const DEFAULT_CONFIG = {
 
     // EMA Filter (亮度平滑)
     brightness: {
-      alpha: 0.2                 // 平滑系数 (更平滑的视觉反馈)
+      alpha: 0.3                 // 🔥 修复抖动: 0.2 → 0.3 (匹配Worklet硬编码值)
     }
   },
 

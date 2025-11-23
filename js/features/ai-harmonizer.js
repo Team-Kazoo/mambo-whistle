@@ -25,7 +25,7 @@ export class AiHarmonizer {
         this.noteBuffer = [];
         this.maxBufferLength = 32; // Number of quantized notes to keep
         this.lastProcessTime = 0;
-        this.processInterval = 4000; // Generate every 4 seconds
+        this.processInterval = 2000; // 🔥 演示修复: 4s → 2s (更快响应)
 
         // State
         this.currentChord = null;
@@ -98,8 +98,8 @@ export class AiHarmonizer {
                     }
                 }).toDestination();
 
-                // Lower volume for backing track
-                this.backingSynth.volume.value = -12;
+                // 🔥 演示修复: 提高音量让AI和声更明显
+                this.backingSynth.volume.value = -6;  // -12dB → -6dB (4倍响度)
 
                 // Add reverb for spacious sound
                 const reverb = new Tone.Reverb(3).toDestination();
@@ -152,8 +152,8 @@ export class AiHarmonizer {
         const clarity = pitchFrame.confidence ?? pitchFrame.clarity ?? 0;
         const frequency = pitchFrame.frequency ?? pitchFrame.pitch ?? 0;
 
-        // Only buffer high-confidence notes
-        if (clarity > 0.9 && frequency > 0) {
+        // 🔥 演示修复: 降低置信度要求，更容易触发AI
+        if (clarity > 0.7 && frequency > 0) {  // 0.9 → 0.7
             this._addToBuffer(frequency);
         }
 
@@ -181,8 +181,10 @@ export class AiHarmonizer {
                 this.noteBuffer.shift();
             }
 
-            // Debug log (optional, can comment out)
-            // console.log('[AI Harmonizer] Buffered note:', midi, `(${this.noteBuffer.length}/${this.maxBufferLength})`);
+            // 🔥 演示修复: 显示缓冲进度，让用户看到AI在工作
+            if (this.noteBuffer.length % 5 === 0) {  // 每5个音符显示一次
+                console.log(`🎤 [AI Jam] Buffered ${this.noteBuffer.length}/${this.maxBufferLength} notes`);
+            }
         }
     }
 
@@ -237,8 +239,15 @@ export class AiHarmonizer {
 
             // Play the result
             if (result && result.notes && result.notes.length > 0) {
+                this._updateStatus('jamming', '🎸 Jamming!');  // 🔥 新状态: jamming
                 this._playBacking(result.notes);
-                this._updateStatus('ready', 'AI Jamming ♪');
+
+                // 🔥 演示修复: 播放完成后恢复Listening状态
+                setTimeout(() => {
+                    if (this.enabled) {
+                        this._updateStatus('ready', 'AI Listening...');
+                    }
+                }, 2000);  // 2秒后恢复
             } else {
                 console.warn('[AI Harmonizer] No notes generated');
                 this._updateStatus('ready', 'AI Listening...');

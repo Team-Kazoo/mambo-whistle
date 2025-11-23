@@ -273,21 +273,49 @@ export class MamboView {
             case 'ready':
                 // Active - Listening (Google blue accent)
                 if (text) text.textContent = 'AI Jam';
-                if (statusText) statusText.textContent = 'Listening...';
+                if (statusText) {
+                    statusText.textContent = 'Listening...';
+                    statusText.classList.remove('text-green-600', 'font-bold');
+                    statusText.classList.add('text-gray-500');
+                }
                 if (icon) {
-                    icon.classList.remove('animate-spin');
+                    icon.classList.remove('animate-spin', 'animate-bounce');
                     icon.classList.add('animate-pulse');
                 }
-                this.aiJamBtn.classList.remove('border-gray-200', 'bg-white');
+                this.aiJamBtn.classList.remove('border-gray-200', 'bg-white', 'border-green-500');
                 this.aiJamBtn.classList.add('border-blue-500', 'shadow-md');
                 this.aiJamBtn.disabled = false;
                 break;
 
             case 'processing':
-                // Generating harmony
+                // 🔥 演示修复: 增强"正在生成"视觉反馈
                 if (text) text.textContent = 'AI Jam';
-                if (statusText) statusText.textContent = 'Generating...';
-                if (icon) icon.classList.add('animate-pulse');
+                if (statusText) {
+                    statusText.textContent = '🎵 Generating...';
+                    statusText.classList.add('text-blue-600', 'font-bold');
+                    statusText.classList.remove('text-gray-500', 'text-green-600');
+                }
+                if (icon) {
+                    icon.classList.remove('animate-pulse');
+                    icon.classList.add('animate-bounce');  // 更明显的动画
+                }
+                this.aiJamBtn.classList.add('border-blue-500', 'shadow-md');
+                break;
+
+            case 'jamming':
+                // 🔥 新状态: AI正在播放和声
+                if (text) text.textContent = 'AI Jam';
+                if (statusText) {
+                    statusText.textContent = '🎸 Jamming!';
+                    statusText.classList.add('text-green-600', 'font-bold');
+                    statusText.classList.remove('text-gray-500', 'text-blue-600');
+                }
+                if (icon) {
+                    icon.classList.remove('animate-bounce', 'animate-pulse');
+                    icon.classList.add('animate-spin');  // 旋转动画表示正在播放
+                }
+                this.aiJamBtn.classList.remove('border-blue-500');
+                this.aiJamBtn.classList.add('border-green-500', 'shadow-md');
                 break;
 
             case 'error':

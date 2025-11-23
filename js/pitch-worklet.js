@@ -461,9 +461,15 @@ class PitchDetectorWorklet extends AudioWorkletProcessor {
 
     _getSmoothedPitch() {
         if (this.pitchHistory.length === 0) return 0;
-        const sorted = [...this.pitchHistory].sort((a, b) => a - b);
-        const mid = Math.floor(sorted.length / 2);
-        return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+
+        // 🔥 修复抖动: 移除Worklet内部中值滤波，避免与主线程PitchDetector双重滤波
+        // 直接返回最新值，平滑交给主线程统一处理
+        return this.pitchHistory[this.pitchHistory.length - 1];
+
+        // 原中值滤波代码已禁用（避免双重平滑导致相位差和延迟）
+        // const sorted = [...this.pitchHistory].sort((a, b) => a - b);
+        // const mid = Math.floor(sorted.length / 2);
+        // return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
     }
 
     _frequencyToNote(frequency) {
