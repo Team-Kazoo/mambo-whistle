@@ -240,109 +240,68 @@ export class MamboView {
         if (!aiState || !this.aiJamBtn) return;
 
         const { status } = aiState;
-
-        // Hide all icons first
-        if (this.aiIconIdle) this.aiIconIdle.classList.add('hidden');
-        if (this.aiIconLoading) this.aiIconLoading.classList.add('hidden');
-        if (this.aiIconActive) this.aiIconActive.classList.add('hidden');
-        if (this.aiProgressBar) this.aiProgressBar.style.width = '0%';
-
-        // Define style presets
-        const idleClasses = {
-            add: ['bg-white/80', 'hover:bg-white', 'text-gray-900'],
-            remove: ['bg-blue-600', 'hover:bg-blue-700', 'text-white']
-        };
-        const activeClasses = {
-            add: ['bg-blue-600', 'hover:bg-blue-700', 'text-white'],
-            remove: ['bg-white/80', 'hover:bg-white', 'text-gray-900']
-        };
-
-        const applyClasses = (element, preset) => {
-            if (!element) return;
-            element.classList.remove(...preset.remove);
-            element.classList.add(...preset.add);
-        };
+        const icon = document.getElementById('aiJamIcon');
+        const text = document.getElementById('aiJamText');
+        const notice = document.getElementById('aiJamNotice');
 
         switch (status) {
-            case 'loading':
-                // Loading State
-                if (this.aiIconLoading) this.aiIconLoading.classList.remove('hidden');
-                if (this.aiJamTitle) this.aiJamTitle.textContent = 'Downloading...';
-                if (this.aiJamStatus) this.aiJamStatus.textContent = '~5MB Model';
-                if (this.aiJamBtn) this.aiJamBtn.disabled = true;
+            case 'idle':
+                // Off State
+                if (text) text.textContent = 'AI Jam';
+                if (icon) icon.classList.remove('animate-spin', 'animate-pulse');
+                this.aiJamBtn.classList.remove('border-purple-400', 'bg-purple-600/30');
+                this.aiJamBtn.classList.add('border-purple-500/30');
+                this.aiJamBtn.disabled = false;
+                break;
 
-                // Simulate progress animation
-                if (this.aiProgressBar) {
-                    setTimeout(() => { this.aiProgressBar.style.width = '40%'; }, 100);
-                    setTimeout(() => { this.aiProgressBar.style.width = '80%'; }, 2000);
+            case 'loading':
+                // Loading Model
+                if (text) text.textContent = 'Loading...';
+                if (icon) {
+                    icon.classList.remove('animate-pulse');
+                    icon.classList.add('animate-spin');
+                }
+                this.aiJamBtn.classList.add('border-purple-400');
+                this.aiJamBtn.disabled = true;
+                // Show notice on first load
+                if (notice && !sessionStorage.getItem('aiJamNoticeSeen')) {
+                    notice.classList.remove('hidden');
+                    sessionStorage.setItem('aiJamNoticeSeen', 'true');
                 }
                 break;
 
             case 'ready':
-                // Active State
-                applyClasses(this.aiJamBtn, activeClasses);
-                if (this.aiJamTitle) {
-                    this.aiJamTitle.classList.remove('text-gray-900');
-                    this.aiJamTitle.classList.add('text-white');
+                // Active - Listening
+                if (text) text.textContent = 'AI Listening';
+                if (icon) {
+                    icon.classList.remove('animate-spin');
+                    icon.classList.add('animate-pulse');
                 }
-                if (this.aiJamStatus) {
-                    this.aiJamStatus.classList.remove('text-gray-500');
-                    this.aiJamStatus.classList.add('text-blue-100');
-                }
-                if (this.aiIconActive) this.aiIconActive.classList.remove('hidden');
-                if (this.aiJamTitle) this.aiJamTitle.textContent = 'Smart Jam';
-                if (this.aiJamStatus) this.aiJamStatus.textContent = 'Listening...';
-                if (this.aiJamBtn) this.aiJamBtn.disabled = false;
+                this.aiJamBtn.classList.remove('border-purple-500/30');
+                this.aiJamBtn.classList.add('border-purple-400', 'bg-purple-600/30');
+                this.aiJamBtn.disabled = false;
                 break;
 
             case 'processing':
-                // Thinking State
-                applyClasses(this.aiJamBtn, activeClasses);
-                if (this.aiJamTitle) {
-                    this.aiJamTitle.classList.remove('text-gray-900');
-                    this.aiJamTitle.classList.add('text-white');
-                }
-                if (this.aiJamStatus) {
-                    this.aiJamStatus.classList.remove('text-gray-500');
-                    this.aiJamStatus.classList.add('text-blue-100');
-                }
-                if (this.aiIconActive) this.aiIconActive.classList.remove('hidden');
-                if (this.aiJamStatus) this.aiJamStatus.textContent = 'Generating...';
+                // Generating harmony
+                if (text) text.textContent = 'AI Jamming';
+                if (icon) icon.classList.add('animate-pulse');
                 break;
 
             case 'error':
                 // Error State
-                applyClasses(this.aiJamBtn, idleClasses);
-                if (this.aiJamTitle) {
-                    this.aiJamTitle.classList.remove('text-white');
-                    this.aiJamTitle.classList.add('text-gray-900');
-                }
-                if (this.aiJamStatus) {
-                    this.aiJamStatus.classList.remove('text-blue-100');
-                    this.aiJamStatus.classList.add('text-gray-500');
-                }
-                if (this.aiIconIdle) this.aiIconIdle.classList.remove('hidden');
-                if (this.aiJamTitle) this.aiJamTitle.textContent = 'Error';
-                if (this.aiJamStatus) this.aiJamStatus.textContent = 'Try Again';
-                if (this.aiJamBtn) this.aiJamBtn.disabled = false;
+                if (text) text.textContent = 'AI Error';
+                if (icon) icon.classList.remove('animate-spin', 'animate-pulse');
+                this.aiJamBtn.classList.remove('border-purple-400', 'bg-purple-600/30');
+                this.aiJamBtn.classList.add('border-red-500/50');
+                this.aiJamBtn.disabled = false;
                 break;
 
-            case 'idle':
             default:
-                // Idle State
-                applyClasses(this.aiJamBtn, idleClasses);
-                if (this.aiJamTitle) {
-                    this.aiJamTitle.classList.remove('text-white');
-                    this.aiJamTitle.classList.add('text-gray-900');
-                }
-                if (this.aiJamStatus) {
-                    this.aiJamStatus.classList.remove('text-blue-100');
-                    this.aiJamStatus.classList.add('text-gray-500');
-                }
-                if (this.aiIconIdle) this.aiIconIdle.classList.remove('hidden');
-                if (this.aiJamTitle) this.aiJamTitle.textContent = 'Smart Jam';
-                if (this.aiJamStatus) this.aiJamStatus.textContent = 'Off';
-                if (this.aiJamBtn) this.aiJamBtn.disabled = false;
+                // Fallback to idle
+                if (text) text.textContent = 'AI Jam';
+                if (icon) icon.classList.remove('animate-spin', 'animate-pulse');
+                this.aiJamBtn.disabled = false;
                 break;
         }
     }

@@ -793,6 +793,24 @@
                                     <span class="text-white text-base font-bold tracking-wide">Stop Session</span>
                                 </div>
                             </button>
+
+                            <!-- AI Jam Button (BETA) -->
+                            <button id="aiJamBtn" class="group relative w-full h-14 overflow-hidden rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] border border-purple-500/30">
+                                <!-- Background with subtle gradient -->
+                                <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-pink-600/20 to-purple-600/20 bg-[length:200%_100%] group-hover:bg-[position:100%_0] transition-all duration-700"></div>
+
+                                <!-- Button Content -->
+                                <div class="relative flex items-center justify-center gap-2 h-full">
+                                    <!-- AI Icon (sparkles) -->
+                                    <svg id="aiJamIcon" class="w-4 h-4 text-purple-400 transition-all duration-300" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 0L13.5 8.5L22 10L13.5 11.5L12 20L10.5 11.5L2 10L10.5 8.5L12 0Z"/>
+                                        <path d="M5 3L5.5 5.5L8 6L5.5 6.5L5 9L4.5 6.5L2 6L4.5 5.5L5 3Z"/>
+                                        <path d="M19 15L19.5 17.5L22 18L19.5 18.5L19 21L18.5 18.5L16 18L18.5 17.5L19 15Z"/>
+                                    </svg>
+                                    <span id="aiJamText" class="text-purple-300 text-sm font-semibold tracking-wide">AI Jam</span>
+                                    <span class="px-1.5 py-0.5 bg-purple-500/30 text-purple-300 text-[10px] font-bold rounded uppercase tracking-wider">Beta</span>
+                                </div>
+                            </button>
                         </div>
                     </div>
 
@@ -801,6 +819,40 @@
 
             <!-- Status Bar (for compatibility with main.js) -->
             <div id="statusBar" class="hidden"></div>
+
+            <!-- AI Jam Beta Notice (Toast) -->
+            <div id="aiJamNotice" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-50 max-w-md">
+                <div class="bg-gradient-to-r from-purple-900/95 via-pink-900/95 to-purple-900/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-purple-500/30 p-6 animate-[slideDown_0.3s_ease-out]">
+                    <div class="flex items-start gap-4">
+                        <!-- Icon -->
+                        <div class="flex-shrink-0">
+                            <svg class="w-6 h-6 text-purple-300" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 0L13.5 8.5L22 10L13.5 11.5L12 20L10.5 11.5L2 10L10.5 8.5L12 0Z"/>
+                                <path d="M5 3L5.5 5.5L8 6L5.5 6.5L5 9L4.5 6.5L2 6L4.5 5.5L5 3Z"/>
+                            </svg>
+                        </div>
+                        <!-- Content -->
+                        <div class="flex-1">
+                            <h3 class="text-white font-bold text-base mb-1">AI Jam Mode <span class="text-purple-300 text-xs font-semibold ml-2">BETA</span></h3>
+                            <p class="text-purple-200 text-sm leading-relaxed mb-3">
+                                AI listens to your melody and generates harmony every 4 seconds using Google Magenta.
+                            </p>
+                            <div class="flex items-center gap-2 text-xs text-purple-300">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"/>
+                                </svg>
+                                <span>Model loads on first use (~3s)</span>
+                            </div>
+                        </div>
+                        <!-- Close button -->
+                        <button onclick="document.getElementById('aiJamNotice').classList.add('hidden')" class="text-purple-300 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             <!-- Visualizer (Pro Audio Style) -->
             <div id="visualizer" class="mb-16 transition-all duration-700 ease-out transform translate-y-0 opacity-100" data-active-class="translate-y-0 opacity-100">
