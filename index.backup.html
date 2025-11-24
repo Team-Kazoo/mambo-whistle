@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light dark">
-    <title>Mambo Whistle - Neural Voice Instrument | iOS 26 Liquid Glass</title>
+    <title>Mambo Whistle - Neural Voice Instrument</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -81,11 +80,11 @@
 
         /* 玻璃拟态优化 - Modern Apple Style */
         .glass {
-            background: rgba(28, 28, 30, 0.7);
+            background: rgba(255, 255, 255, 0.65);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
         }
 
         /* 强制硬件加速，解决闪烁问题 */
@@ -102,11 +101,11 @@
 
         .card-inner {
             position: relative;
-            background: rgba(28, 28, 30, 0.7);
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(6px);
             transition: all 0.3s ease;
             z-index: 10;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255,255,255,0.5);
         }
 
         /* 默认状态下隐藏彩色边框 */
@@ -122,13 +121,13 @@
             animation: borderRotate 4s linear infinite;
         }
 
-        /* 激活状态：显示边框，卡片变深 */
+        /* 激活状态：显示边框，卡片变白 */
         .instrument-btn.active .card-border-gradient {
             opacity: 1;
         }
 
         .instrument-btn.active .card-inner {
-            background: rgba(28, 28, 30, 0.95); /* 选中时卡片变深色，对比度更高 */
+            background: #FFFFFF; /* 选中时卡片变实心白，对比度更高 */
             border-color: transparent;
             transform: scale(0.98); /* 轻微按压感 */
         }
@@ -184,51 +183,53 @@
         .input-group:focus-within { box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.2); border-color: #4285F4; }
     </style>
     
-    <!-- iOS 26 Theme -->
-    <link rel="stylesheet" href="css/ios26-theme.css">
     <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="min-h-screen relative">
+<body class="bg-[#F5F5F7] text-[#1D1D1F] min-h-screen relative">
 
-    <!-- Background: iOS 26 Gradient (defined in CSS) -->
+    <!-- Background: Static Mesh Gradient for Performance (Apple Studio Style) -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-[#F5F5F7]">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.1),rgba(255,255,255,0)_50%)]"></div>
+        <div class="absolute top-0 left-0 right-0 h-[600px] bg-[radial-gradient(circle_at_50%_-20%,rgba(66,133,244,0.03),rgba(255,255,255,0)_60%)]"></div>
+    </div>
 
-    <!-- 导航栏 - iOS 26 Liquid Glass -->
-    <nav class="fixed top-0 inset-x-0 z-50 glass-strong border-b border-[var(--color-separator)] transition-all duration-300">
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 inset-x-0 z-50 glass border-b-0 transition-all duration-300">
         <div class="max-w-6xl mx-auto px-6 h-[64px] flex items-center justify-between">
             <a href="#" class="flex items-center gap-3 group no-underline">
                 <div class="w-9 h-9 bg-black rounded-xl flex items-center justify-center text-lg shadow-lg text-white group-hover:scale-105 transition-transform">
                     🎧
                 </div>
                 <div>
-                    <p style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif; font-size: 18px; font-weight: 700; color: #FFFFFF; line-height: 1;">Mambo Whistle</p>
-                    <p style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 10px; font-weight: 500; color: rgba(235, 235, 245, 0.6); letter-spacing: 0.1em; text-transform: uppercase;" class="mt-0.5">Neural Engine</p>
+                    <p class="font-display font-bold text-[18px] tracking-tight leading-none text-[#1d1d1f]">Mambo Whistle</p>
+                    <p class="text-[10px] font-medium text-apple-gray tracking-widest uppercase mt-0.5">Neural Engine</p>
                 </div>
             </a>
 
-            <div class="hidden md:flex items-center gap-8" style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; font-size: 13px; font-weight: 500; color: rgba(235, 235, 245, 0.8);">
-                <a href="#instrumentSection" style="color: rgba(235, 235, 245, 0.8);" class="hover:text-[#FFFFFF] transition-colors no-underline">Instruments</a>
-                <a href="#visualizer" style="color: rgba(235, 235, 245, 0.8);" class="hover:text-[#FFFFFF] transition-colors no-underline">Visualizer</a>
-                <a href="#tipsSection" style="color: rgba(235, 235, 245, 0.8);" class="hover:text-[#FFFFFF] transition-colors no-underline">Tips</a>
+            <div class="hidden md:flex items-center gap-8 text-[13px] font-medium text-apple-sub">
+                <a href="#instrumentSection" class="hover:text-[#1D1D1F] transition-colors">Instruments</a>
+                <a href="#visualizer" class="hover:text-[#1D1D1F] transition-colors">Visualizer</a>
+                <a href="#tipsSection" class="hover:text-[#1D1D1F] transition-colors">Tips</a>
             </div>
 
             <div class="flex items-center gap-3">
                 <!-- System Status Badge -->
                 <div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/85 backdrop-blur-sm rounded-full border border-black/5 shadow-sm">
                     <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span id="systemStatus" style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 10px; font-weight: 600; color: #1D1D1F;">Ready</span>
+                    <span id="systemStatus" class="text-[10px] font-semibold text-gray-700">Ready</span>
                 </div>
 
                 <!-- Settings Button with Text Guide -->
                 <div class="relative group/settings">
                     <button id="settingsBtn" class="flex items-center gap-2.5 bg-white/85 hover:bg-white active:bg-gray-50 backdrop-blur-sm border border-black/5 shadow-sm px-4 py-1.5 rounded-full transition-all duration-300 hover:scale-105 active:scale-95">
                         <svg class="w-5 h-5 text-gray-600 group-hover/settings:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <span style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 11px; font-weight: 600; color: #1D1D1F;">Settings</span>
+                        <span class="text-[11px] font-semibold text-gray-900">Settings</span>
                     </button>
 
                     <!-- Tooltip for Settings -->
                     <div class="absolute top-full right-0 mt-3 w-56 p-3 bg-white/95 backdrop-blur-sm rounded-2xl border border-black/5 shadow-xl opacity-0 invisible group-hover/settings:opacity-100 group-hover/settings:visible transition-all duration-200 z-[60] transform translate-y-2 group-hover/settings:translate-y-0">
-                        <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; font-size: 11px; color: rgba(60, 60, 67, 0.6); line-height: 1.5;">
-                            <span style="font-weight: 600; color: #1D1D1F;" class="block mb-1">Configure Audio</span>
+                        <div class="text-[11px] text-gray-500 leading-relaxed">
+                            <span class="font-semibold text-gray-900 block mb-1">Configure Audio</span>
                             Adjust synthesis mode, auto-tune, device selection, and effects.
                         </div>
                     </div>
@@ -240,13 +241,13 @@
     <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 z-[100] hidden">
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/60 transition-opacity" id="settingsBackdrop"></div>
-
-        <!-- Modal Content - Wider Apple-style panel - Dark Mode -->
-        <div class="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-[#1C1C1E] shadow-2xl p-10 overflow-y-auto transform transition-transform translate-x-full duration-300 ease-out" id="settingsPanel">
+        <div class="absolute inset-0 bg-black/30 transition-opacity" id="settingsBackdrop"></div>
+        
+        <!-- Modal Content - Wider Apple-style panel -->
+        <div class="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-white shadow-2xl p-10 overflow-y-auto transform transition-transform translate-x-full duration-300 ease-out" id="settingsPanel">
             <div class="flex items-center justify-between mb-10">
-                <h2 class="text-3xl font-display font-bold text-white">Settings</h2>
-                <button id="closeSettingsBtn" class="p-2 rounded-full hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-all active:scale-95">
+                <h2 class="text-3xl font-display font-bold text-[#1D1D1F]">Settings</h2>
+                <button id="closeSettingsBtn" class="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-all active:scale-95">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -255,7 +256,7 @@
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h3 class="text-sm font-bold text-gray-300 mb-1">Synthesis Mode</h3>
+                        <h3 class="text-sm font-bold text-gray-700 mb-1">Synthesis Mode</h3>
                         <p class="text-xs text-gray-500">Choose between continuous pitch or discrete notes</p>
                     </div>
                     <label class="toggle-switch">
@@ -263,14 +264,14 @@
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
-                <div class="p-4 bg-[#2C2C2E] rounded-xl border border-gray-800">
+                <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-blue-900/40 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                             </div>
                             <div>
-                                <p id="modeText" class="text-sm font-semibold text-white">Continuous Mode</p>
+                                <p id="modeText" class="text-sm font-semibold text-gray-900">Continuous Mode</p>
                                 <p class="text-xs text-gray-500">Smooth pitch transitions</p>
                             </div>
                         </div>
@@ -278,23 +279,23 @@
                 </div>
             </div>
 
-            <hr class="border-gray-800 mb-8">
+            <hr class="border-gray-100 mb-8">
 
             <!-- Section: Audio I/O -->
             <div class="mb-8">
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Audio Input & Output</h3>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Audio Input & Output</h3>
                 <div class="space-y-4">
                     <!-- Input -->
                     <div>
-                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                             Microphone
                         </label>
                         <div class="relative">
-                            <select id="audioInputSelect" class="w-full bg-[#2C2C2E] border border-gray-800 rounded-xl px-4 py-3 text-sm font-medium text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all">
+                            <select id="audioInputSelect" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                                 <option value="default">Default Microphone</option>
                             </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
@@ -302,46 +303,46 @@
 
                     <!-- Output -->
                     <div>
-                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-2">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
                             Speaker
                         </label>
                         <div class="relative">
-                            <select id="audioOutputSelect" class="w-full bg-[#2C2C2E] border border-gray-800 rounded-xl px-4 py-3 text-sm font-medium text-white appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all">
+                            <select id="audioOutputSelect" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                                 <option value="default">Default Output</option>
                             </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
                     </div>
 
-                    <button id="refreshDevicesBtn" class="text-xs font-medium text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                    <button id="refreshDevicesBtn" class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                         Refresh Device List
                     </button>
                 </div>
             </div>
 
-            <hr class="border-gray-800 mb-8">
+            <hr class="border-gray-100 mb-8">
 
             <!-- Section: Tuning -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Auto-Tune & Correction</h3>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Auto-Tune & Correction</h3>
                     <label class="toggle-switch scale-[0.8]">
                         <input type="checkbox" id="autoTuneToggle">
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
 
-                <div class="space-y-6 p-5 bg-[#2C2C2E] rounded-2xl border border-gray-800">
+                <div class="space-y-6 p-5 bg-gray-50 rounded-2xl border border-gray-100">
                     <!-- Key & Scale Selectors (Custom Styled) -->
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Key</label>
                             <div class="relative">
-                                <select id="scaleKeySelect" class="w-full bg-[#1C1C1E] text-white border border-gray-700 rounded-xl px-4 py-3 text-sm font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all">
+                                <select id="scaleKeySelect" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                                     <option value="C">C</option>
                                     <option value="C#">C#</option>
                                     <option value="D">D</option>
@@ -355,7 +356,7 @@
                                     <option value="A#">A#</option>
                                     <option value="B">B</option>
                                 </select>
-                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </div>
@@ -363,7 +364,7 @@
                         <div>
                             <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Scale</label>
                             <div class="relative">
-                                <select id="scaleTypeSelect" class="w-full bg-[#1C1C1E] text-white border border-gray-700 rounded-xl px-4 py-3 text-sm font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all">
+                                <select id="scaleTypeSelect" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm font-semibold appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
                                     <option value="chromatic">Chromatic</option>
                                     <option value="major">Major</option>
                                     <option value="minor">Minor</option>
@@ -371,7 +372,7 @@
                                     <option value="pentatonic_minor">Minor Pentatonic</option>
                                     <option value="blues">Blues</option>
                                 </select>
-                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
+                                <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                                 </div>
                             </div>
@@ -383,12 +384,12 @@
                         <div class="flex justify-between items-baseline mb-2">
                             <label class="text-xs font-bold text-gray-500 uppercase">Correction Strength</label>
                         </div>
-                        <div class="flex p-1 bg-[#1C1C1E] rounded-xl mb-2" id="strengthControl">
-                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-200" data-value="0">Off</button>
-                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-200" data-value="0.5">Soft</button>
-                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-200" data-value="1.0">Hard</button>
+                        <div class="flex p-1 bg-gray-200/80 rounded-xl mb-2" id="strengthControl">
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0">Off</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0.5">Soft</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="1.0">Hard</button>
                         </div>
-                        <p class="text-[11px] text-gray-500 leading-tight">
+                        <p class="text-[11px] text-gray-400 leading-tight">
                             Controls how strongly the pitch is pulled to the nearest note. "Hard" gives that robotic T-Pain effect.
                         </p>
                     </div>
@@ -398,37 +399,37 @@
                         <div class="flex justify-between items-baseline mb-2">
                             <label class="text-xs font-bold text-gray-500 uppercase">Retune Speed</label>
                         </div>
-                        <div class="flex p-1 bg-[#1C1C1E] rounded-xl mb-2" id="speedControl">
-                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-200" data-value="0.0">Robot</button>
-                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-200" data-value="0.4">Pop</button>
-                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-200" data-value="1.0">Natural</button>
+                        <div class="flex p-1 bg-gray-200/80 rounded-xl mb-2" id="speedControl">
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0.0">Robot</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="0.4">Pop</button>
+                            <button class="flex-1 py-2 text-xs font-medium rounded-lg transition-all duration-200 text-gray-500 hover:text-gray-700" data-value="1.0">Natural</button>
                         </div>
-                        <p class="text-[11px] text-gray-500 leading-tight">
+                        <p class="text-[11px] text-gray-400 leading-tight">
                             Determines how fast the pitch snaps. "Robot" is instant (0ms), while "Natural" preserves slides (100ms).
                         </p>
                     </div>
                 </div>
             </div>
 
-            <hr class="border-gray-800 mb-8">
+            <hr class="border-gray-100 mb-8">
 
             <!-- Section: Effects (Synthesis) -->
             <div>
-                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Synthesis Effects</h3>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Synthesis Effects</h3>
                 <div class="space-y-4">
                     <div>
                         <div class="flex justify-between mb-1">
                             <label class="text-[10px] font-bold text-gray-500 uppercase">Reverb (Space)</label>
-                            <span id="reverbValue" class="text-[10px] font-mono text-blue-400">20%</span>
+                            <span id="reverbValue" class="text-[10px] font-mono text-blue-600">20%</span>
                         </div>
-                        <input type="range" id="reverbSlider" min="0" max="100" value="20" class="w-full h-1.5 bg-[#2C2C2E] rounded-lg appearance-none cursor-pointer accent-blue-500">
+                        <input type="range" id="reverbSlider" min="0" max="100" value="20" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
                     </div>
                     <div>
                         <div class="flex justify-between mb-1">
                             <label class="text-[10px] font-bold text-gray-500 uppercase">Delay (Echo)</label>
-                            <span id="delayValue" class="text-[10px] font-mono text-blue-400">0%</span>
+                            <span id="delayValue" class="text-[10px] font-mono text-blue-600">0%</span>
                         </div>
-                        <input type="range" id="delaySlider" min="0" max="100" value="0" class="w-full h-1.5 bg-[#2C2C2E] rounded-lg appearance-none cursor-pointer accent-blue-500">
+                        <input type="range" id="delaySlider" min="0" max="100" value="0" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
                     </div>
                 </div>
             </div>
@@ -438,28 +439,23 @@
     <main class="relative z-10 pt-32 pb-24">
         <div class="max-w-6xl mx-auto px-6">
             
-            <!-- Hero - iOS 26 Style -->
-            <section class="text-center mb-20 relative animate-fade-in-up">
-                <!-- Badge -->
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-subtle border-[var(--color-surface-border)] mb-6">
+            <!-- Hero -->
+            <section class="text-center mb-20 relative">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[11px] font-bold tracking-wide uppercase mb-6">
                     <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-primary)] opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-primary)]"></span>
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                     </span>
-                    <span class="text-[11px] font-semibold tracking-wide uppercase text-[var(--color-primary)]">
-                        Web Audio API Native
-                    </span>
+                    Web Audio API Native
                 </div>
-
-                <!-- Title -->
-                <h1 style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif; font-size: 72px; font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; color: #FFFFFF;" class="mb-6 md:text-[96px]">
+                
+                <h1 class="font-display text-5xl md:text-7xl font-bold tracking-tight text-apple-text mb-6 leading-[1.1]">
                     Turn your voice into<br>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400">any instrument.</span>
+                    <span class="text-transparent bg-clip-text bg-google-gradient">any instrument.</span>
                 </h1>
-
-                <!-- Subtitle -->
-                <p style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.5; color: rgba(235, 235, 245, 0.6);" class="max-w-2xl mx-auto">
-                    Make any mouth become orchestra. <br class="hidden md:block">
+                
+                <p class="text-xl text-apple-gray max-w-2xl mx-auto font-normal leading-relaxed">
+                    Advanced pitch tracking meets AudioWorklet. <br>
                     Zero latency feeling. Pure creative flow.
                 </p>
             </section>
@@ -469,8 +465,8 @@
                 <!-- 乐器选择 - 修复 Google 边框 -->
                 <div class="lg:col-span-7 flex flex-col" id="instrumentSection">
                     <div class="flex items-center justify-between mb-5 pl-1">
-                        <h2 style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif; font-size: 22px; font-weight: 600; color: #FFFFFF;">Select Instrument</h2>
-                        <div id="instrumentStatus" style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 11px; font-weight: 700; color: #1D1D1F; background: rgba(255, 255, 255, 0.9);" class="px-3 py-1 rounded-full shadow-sm">Flute</div>
+                        <h2 class="text-xl font-semibold tracking-tight">Select Instrument</h2>
+                        <div id="instrumentStatus" class="text-[11px] font-bold text-white bg-black/80 px-3 py-1 rounded-full shadow-sm">Saxophone</div>
                     </div>
 
                     <div class="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -479,14 +475,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/flute.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M4 12h16"/><circle cx="8" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="16" cy="12" r="1.5"/><path d="M2 12l2-2v4l-2-2z"/><path d="M20 10v4"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Flute</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Pure & Airy</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Flute</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Pure & Airy</p>
                                     </div>
                                 </div>
                             </div>
@@ -497,14 +493,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/clarinet.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <rect x="10" y="2" width="4" height="3" rx="1"/><path d="M10 5h4v14c0 1.1-.9 2-2 2s-2-.9-2-2V5z"/><circle cx="10.5" cy="8" r="0.8" fill="currentColor"/><circle cx="13.5" cy="8" r="0.8" fill="currentColor"/><circle cx="10.5" cy="11" r="0.8" fill="currentColor"/><circle cx="13.5" cy="11" r="0.8" fill="currentColor"/><circle cx="10.5" cy="14" r="0.8" fill="currentColor"/><circle cx="13.5" cy="14" r="0.8" fill="currentColor"/><path d="M11 19l-2 2m4-2l2 2"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Clarinet</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Woody Hollow</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Clarinet</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Woody Hollow</p>
                                     </div>
                                 </div>
                             </div>
@@ -515,14 +511,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/dizi.png')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M3 12h18"/><circle cx="6" cy="12" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/><path d="M3 10v4M21 10v4"/><path d="M4 8h16"/><path d="M4 16h16"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Dizi</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Bamboo Buzz</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Dizi</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Bamboo Buzz</p>
                                     </div>
                                 </div>
                             </div>
@@ -533,14 +529,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/soprano_sax.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M10 3h4v3h-4z"/><path d="M11 6v8c0 2-1 4-2 5l-1 2"/><path d="M13 6v8c0 2 1 4 2 5l1 2"/><circle cx="9" cy="10" r="0.8" fill="currentColor"/><circle cx="9" cy="13" r="0.8" fill="currentColor"/><circle cx="9" cy="16" r="0.8" fill="currentColor"/><circle cx="15" cy="10" r="0.8" fill="currentColor"/><circle cx="15" cy="13" r="0.8" fill="currentColor"/><circle cx="15" cy="16" r="0.8" fill="currentColor"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Soprano Sax</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Kenny G Style</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Soprano Sax</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Kenny G Style</p>
                                     </div>
                                 </div>
                             </div>
@@ -551,14 +547,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/alto_sax.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M10 2h4v3h-4z"/><path d="M11 5v6c0 3-2 5-3 6l-2 3"/><path d="M13 5v6c0 3 2 5 3 6l2 3"/><circle cx="8" cy="9" r="0.8" fill="currentColor"/><circle cx="8" cy="12" r="0.8" fill="currentColor"/><circle cx="8" cy="15" r="0.8" fill="currentColor"/><circle cx="16" cy="9" r="0.8" fill="currentColor"/><circle cx="16" cy="12" r="0.8" fill="currentColor"/><circle cx="16" cy="15" r="0.8" fill="currentColor"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Alto Sax</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Jazz Standard</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Alto Sax</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Jazz Standard</p>
                                     </div>
                                 </div>
                             </div>
@@ -569,14 +565,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/trumpet.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M21 12h-6"/><path d="M15 10v4"/><rect x="9" y="10" width="6" height="4" rx="0.5"/><circle cx="6" cy="12" r="3"/><path d="M12 11v2"/><path d="M10 11v2"/><circle cx="12" cy="12" r="0.5" fill="currentColor"/><circle cx="10" cy="12" r="0.5" fill="currentColor"/><circle cx="14" cy="12" r="0.5" fill="currentColor"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Trumpet</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Bright Lead</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Trumpet</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Bright Lead</p>
                                     </div>
                                 </div>
                             </div>
@@ -587,14 +583,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/trombone.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M20 12h-4"/><rect x="12" y="10" width="4" height="4" rx="0.5"/><path d="M12 12H4"/><circle cx="2" cy="12" r="1.5"/><path d="M6 10v4"/><path d="M8 10v4"/><path d="M10 10v4"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Trombone</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Slide Master</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Trombone</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Slide Master</p>
                                     </div>
                                 </div>
                             </div>
@@ -605,14 +601,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/suona.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M12 2v8"/><circle cx="12" cy="10" r="2"/><path d="M12 12v6"/><path d="M12 18c0 2.2-1.8 4-4 4h8c-2.2 0-4-1.8-4-4z"/><circle cx="10" cy="14" r="0.6" fill="currentColor"/><circle cx="14" cy="14" r="0.6" fill="currentColor"/><circle cx="10" cy="16" r="0.6" fill="currentColor"/><circle cx="14" cy="16" r="0.6" fill="currentColor"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Suona</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">High Energy</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Suona</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">High Energy</p>
                                     </div>
                                 </div>
                             </div>
@@ -623,14 +619,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/violin.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <ellipse cx="12" cy="16" rx="4" ry="5"/><path d="M12 11v-1a2 2 0 012-2h0a2 2 0 012-2V3"/><path d="M10 13l4 0"/><path d="M10 15l4 0"/><path d="M10 17l4 0"/><path d="M10 19l4 0"/><circle cx="12" cy="8" r="1"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Violin</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Solo Strings</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Violin</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Solo Strings</p>
                                     </div>
                                 </div>
                             </div>
@@ -641,14 +637,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/cello.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <ellipse cx="12" cy="14" rx="5" ry="7"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1"/><path d="M9 11h6"/><path d="M9 13h6"/><path d="M9 15h6"/><path d="M9 17h6"/><path d="M12 21v1"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Cello</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Deep Warmth</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Cello</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Deep Warmth</p>
                                     </div>
                                 </div>
                             </div>
@@ -659,14 +655,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/erhu.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <path d="M12 2v20"/><rect x="10" y="10" width="4" height="6" rx="1"/><path d="M8 12h8"/><path d="M8 14h8"/><circle cx="10" cy="4" r="1"/><circle cx="14" cy="4" r="1"/><path d="M10 5l2 3"/><path d="M14 5l-2 3"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Erhu</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Chinese Fiddle</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Erhu</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Chinese Fiddle</p>
                                     </div>
                                 </div>
                             </div>
@@ -677,14 +673,14 @@
                             <div class="card-border-gradient"></div>
                             <div class="card-inner h-36 rounded-[20px] overflow-hidden relative">
                                 <div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style="background-image: url('images/instruments/harmonica.jpg')"></div>
-                                <div class="absolute inset-0 bg-black/50 group-[.active]:bg-black/60 transition-colors"></div>
+                                <div class="absolute inset-0 bg-white/80  group-[.active]:bg-white/90 transition-colors"></div>
                                 <div class="relative z-10 h-full p-4 flex flex-col justify-between">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-white opacity-70">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="text-[#1D1D1F] opacity-70">
                                         <rect x="4" y="9" width="16" height="6" rx="1"/><path d="M6 9v6"/><path d="M9 9v6"/><path d="M12 9v6"/><path d="M15 9v6"/><path d="M18 9v6"/><circle cx="7.5" cy="12" r="0.8" fill="currentColor"/><circle cx="10.5" cy="12" r="0.8" fill="currentColor"/><circle cx="13.5" cy="12" r="0.8" fill="currentColor"/><circle cx="16.5" cy="12" r="0.8" fill="currentColor"/>
                                     </svg>
                                     <div>
-                                        <p class="font-semibold text-sm text-white">Harmonica</p>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">Blues Reed</p>
+                                        <p class="font-semibold text-sm text-[#1D1D1F]">Harmonica</p>
+                                        <p class="text-[10px] text-apple-gray mt-0.5">Blues Reed</p>
                                     </div>
                                 </div>
                             </div>
@@ -692,25 +688,22 @@
                     </div>
                 </div>
 
-                <!-- 控制中心 - iOS 26 Liquid Glass -->
+                <!-- 控制中心 - 修复 Cannot read classList 错误 -->
                 <div class="lg:col-span-5 flex flex-col h-full" id="recordingSection">
                     <div class="flex items-center justify-between mb-5 pl-1">
-                        <h2 style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif; font-size: 22px; font-weight: 600; color: #FFFFFF;">Live Control</h2>
-                        <div class="flex items-center gap-2 status-chip status-ready">
-                            <span class="w-2 h-2 rounded-full bg-[#4CD964]"></span>
-                            <span id="recordingStatus" style="font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; color: rgba(235, 235, 245, 0.8);">Standby</span>
+                        <h2 class="text-xl font-semibold tracking-tight">Live Control</h2>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span id="recordingStatus" class="text-[11px] font-bold text-apple-gray uppercase">Standby</span>
                         </div>
                     </div>
 
-                    <div class="glass rounded-[32px] p-8 flex-1 flex flex-col justify-between relative overflow-hidden group gpu-accelerated">
-                        <!-- Decorative gradient -->
-                        <div class="absolute top-0 right-0 w-40 h-40 opacity-30 blur-3xl">
-                            <div class="w-full h-full bg-gradient-to-br from-blue-500 to-transparent rounded-bl-[80px]"></div>
-                        </div>
+                    <div class="glass rounded-[32px] p-8 flex-1 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-blue-500/10 to-transparent rounded-bl-[80px]"></div>
 
                         <div>
-                            <h3 style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif; font-size: 28px; font-weight: 700; color: #FFFFFF;" class="mb-3">Start Session</h3>
-                            <p id="recordingHelper" style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; font-size: 15px; font-weight: 400; line-height: 1.5; color: rgba(235, 235, 245, 0.6);" class="leading-relaxed max-w-[90%]">
+                            <h3 class="text-3xl font-display font-bold text-apple-text mb-3">Start Session</h3>
+                            <p id="recordingHelper" class="text-sm text-apple-gray leading-relaxed max-w-[90%]">
                                 Use headphones. Wired microphones recommended over Bluetooth for best latency.
                             </p>
                         </div>
@@ -873,28 +866,28 @@
             <!-- Tips & Troubleshooting - 修复 warningBox 存在性 -->
             <section id="tipsSection" class="mb-20">
                 <div class="flex items-center justify-between mb-6 px-2">
-                    <h2 class="text-2xl font-semibold tracking-tight text-white">Session Tips</h2>
-                    <button id="helpToggle" class="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors">Show Details</button>
+                    <h2 class="text-2xl font-semibold tracking-tight">Session Tips</h2>
+                    <button id="helpToggle" class="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">Show Details</button>
                 </div>
 
                 <div id="helpContent" class="grid md:grid-cols-3 gap-6">
                     <div class="glass p-6 rounded-[24px]">
                         <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm mb-3 font-bold">1</div>
-                        <h3 class="font-semibold text-white mb-2">Audio Setup</h3>
-                        <p class="text-xs text-gray-400 leading-relaxed">
+                        <h3 class="font-semibold text-[#1D1D1F] mb-2">Audio Setup</h3>
+                        <p class="text-xs text-apple-gray leading-relaxed">
                             <strong>Heaphones required</strong> to avoid feedback. <br>
                             For lowest latency, use a <strong>wired mic</strong> or built-in microphone. Bluetooth devices often cause noticeable lag.
                         </p>
                     </div>
                     <div class="glass p-6 rounded-[24px]">
                         <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-sm mb-3 font-bold">2</div>
-                        <h3 class="font-semibold text-white mb-2">Mode Selection</h3>
-                        <p class="text-xs text-gray-400 leading-relaxed">"Continuous" allows for sliding notes. Toggle off for discrete pitch steps.</p>
+                        <h3 class="font-semibold text-[#1D1D1F] mb-2">Mode Selection</h3>
+                        <p class="text-xs text-apple-gray leading-relaxed">"Continuous" allows for sliding notes. Toggle off for discrete pitch steps.</p>
                     </div>
                     <div class="glass p-6 rounded-[24px]">
                         <div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-sm mb-3 font-bold">3</div>
-                        <h3 class="font-semibold text-white mb-2">Troubleshoot</h3>
-                        <p class="text-xs text-gray-400 leading-relaxed">If sound stops, click Stop then Start again. Chrome handles AudioWorklets best.</p>
+                        <h3 class="font-semibold text-[#1D1D1F] mb-2">Troubleshoot</h3>
+                        <p class="text-xs text-apple-gray leading-relaxed">If sound stops, click Stop then Start again. Chrome handles AudioWorklets best.</p>
                         
                         <!-- 必须存在 warningBox 和 warningText 供 JS 写入，否则报错 -->
                         <div id="warningBox" class="hidden mt-3 p-2 bg-red-50 rounded border border-red-100">
@@ -906,30 +899,30 @@
 
             <!-- Early Bird Form -->
             <section class="mb-20">
-                <div class="relative glass rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)] overflow-hidden border border-white/10">
+                <div class="relative bg-white rounded-[32px] p-2 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden border border-gray-100">
                     <div class="absolute top-0 left-0 w-full h-1 bg-google-gradient"></div>
-
+                    
                     <div class="px-6 py-12 text-center relative z-10">
-                        <span class="inline-block py-1 px-3 rounded-full bg-gray-800 text-gray-300 text-[10px] font-bold uppercase tracking-widest mb-4">Coming Soon</span>
-                        <h2 class="text-3xl font-display font-bold text-white mb-4">Get Mambo Whistle Pro for Desktop.</h2>
-                        <p class="text-gray-400 max-w-lg mx-auto mb-8 text-base">
-                            High-fidelity offline rendering and MIDI export.
-                            Join the early bird list for <span class="text-green-400 font-semibold">50% off</span>.
+                        <span class="inline-block py-1 px-3 rounded-full bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-widest mb-4">Coming Soon</span>
+                        <h2 class="text-3xl font-display font-bold text-[#1D1D1F] mb-4">Get Mambo Whistle Pro for Desktop.</h2>
+                        <p class="text-apple-gray max-w-lg mx-auto mb-8 text-base">
+                            High-fidelity offline rendering and MIDI export. 
+                            Join the early bird list for <span class="text-green-600 font-semibold">50% off</span>.
                         </p>
 
                         <form id="waitlistForm" class="max-w-md mx-auto relative" onsubmit="event.preventDefault(); handleFormSubmit();">
-                            <div class="input-group relative flex items-center rounded-full bg-gray-900 border border-gray-700 p-1 transition-all duration-300">
-                                <div class="pl-4 text-gray-500 input-icon transition-all duration-300">
+                            <div class="input-group relative flex items-center rounded-full bg-gray-50 border border-gray-200 p-1 transition-all duration-300">
+                                <div class="pl-4 text-gray-400 input-icon transition-all duration-300">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                                 </div>
                                 <input type="email" placeholder="Enter your email address" required
-                                    class="flex-1 bg-transparent border-none outline-none px-4 py-3 text-white placeholder-gray-500 text-sm font-medium">
+                                    class="flex-1 bg-transparent border-none outline-none px-4 py-3 text-[#1D1D1F] placeholder-gray-400 text-sm font-medium">
                                 <button type="submit" id="submitBtn"
-                                    class="bg-white hover:bg-gray-100 text-black rounded-full px-6 py-3 text-sm font-bold flex items-center gap-2 transform active:scale-[0.98] transition-transform">
+                                    class="bg-[#1D1D1F] hover:bg-black text-white rounded-full px-6 py-3 text-sm font-bold flex items-center gap-2 transform active:scale-[0.98] transition-transform">
                                     <span>Notify Me</span>
                                 </button>
                             </div>
-                            <p id="formFeedback" class="text-green-400 text-xs font-bold mt-3 opacity-0 transition-opacity duration-300 transform translate-y-2">
+                            <p id="formFeedback" class="text-green-600 text-xs font-bold mt-3 opacity-0 transition-opacity duration-300 transform translate-y-2">
                                 You're on the list! 🚀
                             </p>
                         </form>
@@ -937,8 +930,8 @@
                 </div>
             </section>
 
-            <footer class="text-center pb-8 border-t border-gray-800 pt-8">
-                <p class="text-xs text-gray-500">&copy; 2025 Mambo Whistle Team. Runs locally in your browser.</p>
+            <footer class="text-center pb-8 border-t border-gray-200 pt-8">
+                <p class="text-xs text-apple-gray">&copy; 2025 Mambo Whistle Team. Runs locally in your browser.</p>
             </footer>
 
         </div>

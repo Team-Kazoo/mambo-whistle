@@ -1,0 +1,344 @@
+/**
+ * 🍎 Apple iOS 26 Liquid Glass - Complete Design System
+ * Based on Apple WWDC 2025
+ * Release Date: 2025-06-09
+ * Applicable: iOS 26, iPadOS 26, macOS Tahoe 26
+ */
+
+:root {
+  /* ================================
+     🎨 色彩系统 (Color System)
+     ================================ */
+
+  /* 主要交互色 */
+  --color-primary: #007AFF;           /* System Blue */
+  --color-secondary: #5AC8FA;         /* System Teal */
+  --color-accent: #5856D6;            /* System Purple */
+  --color-success: #4CD964;           /* System Green */
+  --color-warning: #FFCC00;           /* System Yellow */
+  --color-error: #FF3B30;             /* System Red */
+  --color-pink: #FF2D55;              /* System Pink */
+  --color-orange: #FF9500;            /* System Orange */
+
+  /* 背景色系统 */
+  --color-background: #F5F5F7;        /* Light mode background */
+  --color-secondary-background: #FFFFFF;
+  --color-tertiary-background: #F2F2F7;
+
+  /* Liquid Glass 表面色 */
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-surface-hover: rgba(255, 255, 255, 0.85);
+  --color-surface-border: rgba(209, 213, 219, 0.3);
+
+  /* 文本色 (Label) */
+  --color-text: #1D1D1F;              /* Primary text */
+  --color-text-secondary: rgba(60, 60, 67, 0.6);
+  --color-text-tertiary: rgba(60, 60, 67, 0.3);
+  --color-text-quaternary: rgba(60, 60, 67, 0.18);
+
+  /* 分隔线 */
+  --color-separator: rgba(60, 60, 67, 0.12);
+  --color-separator-opaque: rgba(60, 60, 67, 0.29);
+
+  /* 填充色 */
+  --color-fill: rgba(120, 120, 128, 0.2);
+  --color-fill-secondary: rgba(120, 120, 128, 0.16);
+  --color-fill-tertiary: rgba(118, 118, 128, 0.12);
+
+  /* ================================
+     🔤 字体系统 (Typography)
+     ================================ */
+
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Monaco, Consolas, monospace;
+  --font-rounded: -apple-system-rounded, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* 字体大小 (iOS Standard) */
+  --font-size-large-title: 34px;
+  --font-size-title1: 28px;
+  --font-size-title2: 22px;
+  --font-size-title3: 20px;
+  --font-size-headline: 17px;
+  --font-size-body: 17px;
+  --font-size-callout: 16px;
+  --font-size-subheadline: 15px;
+  --font-size-footnote: 13px;
+  --font-size-caption1: 12px;
+  --font-size-caption2: 11px;
+
+  /* 字重 */
+  --font-weight-ultralight: 100;
+  --font-weight-thin: 200;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+  --font-weight-black: 900;
+
+  /* 行高 */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.4;
+  --line-height-relaxed: 1.5;
+  --line-height-loose: 1.6;
+
+  /* ================================
+     📐 圆角系统 (Corner Radius)
+     ================================ */
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-full: 9999px;
+
+  /* ================================
+     💧 Liquid Glass 效果
+     ================================ */
+
+  --glass-blur: 20px;
+  --glass-blur-subtle: 10px;
+  --glass-blur-strong: 40px;
+  --glass-opacity: 0.72;
+  --glass-saturation: 180%;
+
+  /* Glass 高光 */
+  --glass-highlight: rgba(255, 255, 255, 0.5);
+  --glass-highlight-subtle: rgba(255, 255, 255, 0.25);
+  --glass-shadow: rgba(0, 0, 0, 0.05);
+
+  /* ================================
+     🎭 阴影系统 (Shadows)
+     ================================ */
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.15);
+
+  /* Liquid Glass 专属阴影 */
+  --shadow-glass:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 var(--glass-highlight);
+
+  --shadow-glass-hover:
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    0 8px 20px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 var(--glass-highlight);
+
+  /* ================================
+     📏 间距系统 (Spacing)
+     ================================ */
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* ================================
+     ⚡ 动画系统 (Animations)
+     ================================ */
+
+  --transition-fast: 0.15s;
+  --transition-base: 0.2s;
+  --transition-slow: 0.3s;
+  --transition-slower: 0.5s;
+
+  --ease-ios: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* ================================
+     🌓 深色模式准备
+     ================================ */
+
+  color-scheme: light;
+}
+
+/* ================================
+   🌙 深色模式 (Dark Mode)
+   ================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 背景色 */
+    --color-background: #000000;
+    --color-secondary-background: #1C1C1E;
+    --color-tertiary-background: #2C2C2E;
+
+    /* Liquid Glass 表面 */
+    --color-surface: rgba(28, 28, 30, 0.7);
+    --color-surface-hover: rgba(28, 28, 30, 0.85);
+    --color-surface-border: rgba(255, 255, 255, 0.1);
+
+    /* 文本色 */
+    --color-text: #FFFFFF;
+    --color-text-secondary: rgba(235, 235, 245, 0.6);
+    --color-text-tertiary: rgba(235, 235, 245, 0.3);
+    --color-text-quaternary: rgba(235, 235, 245, 0.18);
+
+    /* 分隔线 */
+    --color-separator: rgba(84, 84, 88, 0.3);
+    --color-separator-opaque: rgba(84, 84, 88, 0.6);
+
+    /* 填充色 */
+    --color-fill: rgba(120, 120, 128, 0.36);
+    --color-fill-secondary: rgba(120, 120, 128, 0.32);
+    --color-fill-tertiary: rgba(118, 118, 128, 0.24);
+
+    /* Glass 高光 */
+    --glass-highlight: rgba(255, 255, 255, 0.15);
+    --glass-highlight-subtle: rgba(255, 255, 255, 0.08);
+
+    color-scheme: dark;
+  }
+}
+
+/* ================================
+   🎨 实用工具类 (Utility Classes)
+   ================================ */
+
+/* Liquid Glass 核心类 */
+.liquid-glass {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  box-shadow: var(--shadow-glass);
+}
+
+.liquid-glass-subtle {
+  backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(var(--glass-saturation));
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--color-surface-border);
+}
+
+.liquid-glass-strong {
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturation));
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-surface-border);
+  box-shadow: var(--shadow-glass-hover);
+}
+
+/* 光泽效果 */
+.glass-shine::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    rgba(255, 255, 255, 0) 50%
+  );
+  pointer-events: none;
+}
+
+/* 硬件加速 */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* iOS 风格阴影 */
+.shadow-ios-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-ios-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-ios-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+/* 连续圆角近似 */
+.corner-continuous {
+  border-radius: var(--radius-xl);
+}
+
+/* ================================
+   ⚡ 动画效果
+   ================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp var(--transition-slow) var(--ease-ios);
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--transition-base) var(--ease-ios);
+}
+
+/* ================================
+   ♿ 无障碍 (Accessibility)
+   ================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 高对比度模式 */
+@media (prefers-contrast: high) {
+  :root {
+    --color-surface-border: rgba(0, 0, 0, 0.5);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-surface-border: rgba(255, 255, 255, 0.5);
+    }
+  }
+}

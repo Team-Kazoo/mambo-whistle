@@ -1,409 +1,595 @@
-/* Mambo Whistle Web - Minimal CSS (Tailwind handles most styling) */
+/**
+ * 🍎 Mambo Whistle - iOS 26 Liquid Glass Edition
+ * Redesigned with Apple's revolutionary Liquid Glass design language
+ * Based on WWDC 2025 standards
+ */
 
-/* CSS Variables (still needed for toggle switch and modals) */
-:root {
-    --white: #ffffff;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-500: #6b7280;
-    --gray-600: #4b5563;
-    --gray-900: #111827;
-    --blue-500: #3b82f6;
-    --blue-600: #2563eb;
-    --green-500: #10b981;
-    --red-500: #ef4444;
-    --shadow: 0 1px 3px rgba(0,0,0,0.1);
-    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
-    --apple-base: #f5f5f7;
-    --apple-dark: #1d1d1f;
-    --apple-blue: #0071e3;
-    --apple-blue-hover: #0077ed;
-    --apple-gray: #86868b;
-    --apple-ease: cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Import iOS 26 Theme Variables */
+@import url('./ios26-theme.css');
 
-/* Global Reset */
+/* ================================
+   🎯 Global Reset & Base Styles
+   ================================ */
+
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-    font-family: "Inter", "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    background: var(--apple-base);
-    color: var(--apple-dark);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  background: #000000;
+  color: #FFFFFF;
+  line-height: var(--line-height-relaxed);
+  overflow-x: hidden;
+
+  /* 深色渐变背景 */
+  background: linear-gradient(
+    135deg,
+    #000000 0%,
+    #0D0D0D 25%,
+    #1A1A1A 50%,
+    #0D0D0D 75%,
+    #000000 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 60s ease infinite;
 }
 
-.scroll-section {
-    scroll-margin-top: 120px;
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-a {
-    color: var(--apple-blue);
-    font-weight: 500;
-    text-decoration: none;
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
 }
 
-a:hover {
-    text-decoration: underline;
+/* 选中文本 */
+::selection {
+  background: rgba(0, 122, 255, 0.2);
+  color: var(--color-text);
 }
 
-.nav-link {
-    color: #424245;
-    font-weight: 500;
-    transition: color 0.3s var(--apple-ease);
+/* ================================
+   🍎 Liquid Glass Components
+   ================================ */
+
+/* 主要玻璃容器 - 深色 */
+.glass {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  background: rgba(28, 28, 30, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-base) var(--ease-ios);
 }
 
-.nav-link:hover {
-    color: var(--apple-dark);
+.glass:hover {
+  background: rgba(28, 28, 30, 0.85);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    0 8px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
-.inline-link {
-    color: var(--apple-blue);
-    font-weight: 600;
+/* 强化玻璃效果（导航栏等） - 深色 */
+.glass-strong {
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(var(--glass-saturation));
+  background: rgba(18, 18, 18, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.inline-link:hover {
-    text-decoration: underline;
+/* 微妙玻璃效果 */
+.glass-subtle {
+  backdrop-filter: blur(var(--glass-blur-subtle));
+  -webkit-backdrop-filter: blur(var(--glass-blur-subtle));
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.apple-glass-light {
-    background-color: rgba(255, 255, 255, 0.72);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+/* ================================
+   🎨 Typography Enhancements
+   ================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #FFFFFF;
 }
 
-.apple-glass-dark {
-    background-color: rgba(29, 29, 31, 0.72);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+.large-title {
+  font-size: var(--font-size-large-title);
+  font-weight: var(--font-weight-bold);
 }
 
-.apple-bento {
-    background: rgba(255, 255, 255, 0.85);
-    border-radius: 32px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    padding: 32px;
-    box-shadow: 0 30px 80px rgba(15, 23, 42, 0.08);
-    backdrop-filter: saturate(180%) blur(30px);
-    -webkit-backdrop-filter: saturate(180%) blur(30px);
+.title1 {
+  font-size: var(--font-size-title1);
 }
 
-.status-card {
-    border-radius: 24px;
-    padding: 24px;
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
-    backdrop-filter: saturate(180%) blur(30px);
-    -webkit-backdrop-filter: saturate(180%) blur(30px);
+.title2 {
+  font-size: var(--font-size-title2);
 }
 
-.status-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.3rem 1rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+.title3 {
+  font-size: var(--font-size-title3);
 }
 
-.status-ready {
-    background: rgba(0, 113, 227, 0.15);
-    color: var(--apple-blue);
+.headline {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
 }
 
-.status-warning {
-    background: rgba(255, 193, 7, 0.18);
-    color: #b45309;
+.body {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-regular);
 }
 
-.status-error {
-    background: rgba(239, 68, 68, 0.18);
-    color: #b91c1c;
+.callout {
+  font-size: var(--font-size-callout);
 }
 
-.start-cta,
-.stop-cta {
-    width: 100%;
-    border: none;
-    border-radius: 999px;
-    font-size: 1rem;
-    font-weight: 600;
-    padding: 0.95rem 2.5rem;
-    transition: transform 0.25s var(--apple-ease), box-shadow 0.25s var(--apple-ease);
-    cursor: pointer;
+.subheadline {
+  font-size: var(--font-size-subheadline);
 }
 
-.start-cta {
-    background: linear-gradient(120deg, var(--apple-blue), #5e5ce6);
-    color: var(--white);
-    box-shadow: 0 25px 45px rgba(0, 113, 227, 0.35);
+.footnote {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
 }
 
-.start-cta:hover {
-    transform: translateY(-2px) scale(1.01);
+.caption {
+  font-size: var(--font-size-caption1);
+  color: var(--color-text-tertiary);
 }
 
-.start-cta:active {
-    transform: scale(0.99);
+/* ================================
+   🎯 Instrument Cards (Liquid Glass)
+   ================================ */
+
+.instrument-btn {
+  position: relative;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+  transition: all var(--transition-base) var(--ease-ios);
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
 }
 
-.stop-cta {
-    background: rgba(29, 29, 31, 0.9);
-    color: var(--white);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+.card-inner {
+  position: relative;
+
+  /* Liquid Glass Effect - 深色 */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: rgba(28, 28, 30, 0.7);
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-2xl);
+
+  /* iOS Shadow Stack - 深色 */
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+  transition: all var(--transition-base) var(--ease-ios);
+  z-index: 10;
+  overflow: hidden;
 }
 
-.stop-cta:hover {
-    transform: translateY(-1px) scale(1.01);
+/* Hover State - 深色 */
+.instrument-btn:hover .card-inner {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    0 6px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.helper-text {
-    font-size: 0.9rem;
-    color: var(--apple-gray);
+/* Active State - iOS 26 Style */
+.card-border-gradient {
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--radius-2xl) + 2px);
+  background: linear-gradient(135deg,
+    var(--color-primary),
+    var(--color-accent),
+    var(--color-secondary)
+  );
+  background-size: 200% 200%;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity var(--transition-base) var(--ease-ios);
+  animation: gradientRotate 3s ease infinite;
 }
 
-.tip-card {
-    border-radius: 28px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    background: rgba(255, 255, 255, 0.9);
-    padding: 24px;
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
-    backdrop-filter: saturate(180%) blur(30px);
-    -webkit-backdrop-filter: saturate(180%) blur(30px);
+@keyframes gradientRotate {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-.warning-box {
-    border-radius: 20px;
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    background: rgba(255, 255, 255, 0.8);
-    padding: 16px;
-    box-shadow: 0 15px 35px rgba(239, 68, 68, 0.15);
+.instrument-btn.active .card-border-gradient {
+  opacity: 1;
 }
 
-.warning-box.hidden {
-    display: none !important;
+.instrument-btn.active .card-inner {
+  background: rgba(28, 28, 30, 0.95);
+  border-color: transparent;
+  transform: scale(0.98);
+  box-shadow:
+    0 8px 24px rgba(0, 122, 255, 0.3),
+    inset 0 2px 0 rgba(0, 122, 255, 0.2);
 }
 
-.fade-up {
-    /* 动画已移除以降低GPU占用 */
-}
+/* ================================
+   🎛️ Controls & Buttons
+   ================================ */
 
-/* Utility Classes (not covered by Tailwind) */
-.hidden {
-    display: none !important;
-}
-
-/* Toggle Switch (mode switcher - custom component) */
+/* iOS 26 Toggle Switch */
 .toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 51px;  /* Apple Standard Width */
-    height: 31px; /* Apple Standard Height */
-    cursor: pointer;
-    flex-shrink: 0;
+  position: relative;
+  width: 51px;
+  height: 31px;
+  display: inline-block;
 }
 
 .toggle-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+  opacity: 0;
+  width: 0;
+  height: 0;
 }
 
 .toggle-slider {
-    position: absolute;
-    inset: 0;
-    background-color: rgba(120, 120, 128, 0.16); /* Apple Gray */
-    border-radius: 31px;
-    transition: background 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  inset: 0;
+  background-color: rgba(120, 120, 128, 0.16);
+  border-radius: 31px;
+  transition: background var(--transition-base) var(--ease-ios);
+  cursor: pointer;
 }
 
 .toggle-slider:before {
-    content: "";
-    position: absolute;
-    height: 27px; /* 31px - 4px padding */
-    width: 27px;
-    left: 2px;
-    bottom: 2px;
-    background-color: #fff;
-    border-radius: 50%;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
+  content: "";
+  position: absolute;
+  height: 27px;
+  width: 27px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform var(--transition-base) var(--ease-ios);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    0 1px 1px rgba(0, 0, 0, 0.16);
 }
 
 .toggle-switch input:checked + .toggle-slider {
-    background: #34C759; /* Apple Green */
+  background: var(--color-success);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-    transform: translateX(20px); /* 51px - 4px - 27px = 20px */
-    left: 2px; /* Keep left fixed, use transform */
+  transform: translateX(20px);
 }
 
-/* Help Content Accordion */
-.help-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.35s var(--apple-ease);
+@media (prefers-color-scheme: dark) {
+  .toggle-slider {
+    background-color: rgba(120, 120, 128, 0.32);
+  }
+
+  .toggle-slider:before {
+    background-color: rgba(255, 255, 255, 0.95);
+  }
 }
 
-.help-content.show {
-    max-height: 800px;
+/* Primary Buttons (Start/Stop) */
+.start-cta,
+.stop-cta {
+  position: relative;
+  width: 100%;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-system);
+  padding: 14px 28px;
+  cursor: pointer;
+  overflow: hidden;
+
+  transition: all var(--transition-base) var(--ease-ios);
 }
 
-/* Modal System (complex layout not suitable for Tailwind utilities) */
+.start-cta {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #0051D5 100%);
+  color: white;
+  box-shadow:
+    0 8px 24px rgba(0, 122, 255, 0.25),
+    0 4px 12px rgba(0, 122, 255, 0.15);
+}
+
+.start-cta:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow:
+    0 12px 32px rgba(0, 122, 255, 0.3),
+    0 6px 16px rgba(0, 122, 255, 0.2);
+}
+
+.start-cta:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.stop-cta {
+  background: rgba(44, 44, 46, 0.95);
+  color: white;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stop-cta:hover {
+  transform: translateY(-2px);
+  background: rgba(44, 44, 46, 1);
+}
+
+/* ================================
+   📊 Visualizer (Pro Glass Style)
+   ================================ */
+
+#visualizer {
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  background: rgba(8, 8, 8, 0.85);
+  border-radius: var(--radius-2xl);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  overflow: hidden;
+  position: relative;
+}
+
+/* Screen glare effect */
+#visualizer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ================================
+   🎨 Status Badges
+   ================================ */
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption1);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.01em;
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all var(--transition-fast) var(--ease-ios);
+}
+
+.status-ready {
+  background: rgba(0, 122, 255, 0.15);
+  color: var(--color-primary);
+  border: 1px solid rgba(0, 122, 255, 0.2);
+}
+
+.status-warning {
+  background: rgba(255, 204, 0, 0.15);
+  color: var(--color-warning);
+  border: 1px solid rgba(255, 204, 0, 0.2);
+}
+
+.status-error {
+  background: rgba(255, 59, 48, 0.15);
+  color: var(--color-error);
+  border: 1px solid rgba(255, 59, 48, 0.2);
+}
+
+/* ================================
+   🎯 Tips & Cards
+   ================================ */
+
+.tip-card {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background: var(--color-surface);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+
+  box-shadow: var(--shadow-glass);
+  transition: all var(--transition-base) var(--ease-ios);
+}
+
+.tip-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glass-hover);
+}
+
+/* ================================
+   ⚙️ Settings Modal
+   ================================ */
+
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(10px);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.3s;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--transition-base);
 }
 
 .modal-overlay.show {
-    display: flex;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  display: flex;
 }
 
 .modal {
-    background: var(--white);
-    border-radius: 24px;
-    padding: 40px;
-    max-width: 500px;
-    width: 90%;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-    animation: slideUp 0.3s;
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-surface-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-2xl);
+  max-width: 500px;
+  width: 90%;
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  animation: slideUp var(--transition-slow) var(--ease-spring);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.modal-step-indicator {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 20px;
-}
-
-.step-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--gray-300);
-    transition: all 0.3s;
-}
-
-.step-dot.active {
-    width: 24px;
-    border-radius: 4px;
-    background: var(--blue-600);
-}
-
-.progress-bar {
-    width: 100%;
-    height: 8px;
-    background: var(--gray-200);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--blue-600), var(--blue-500));
-    border-radius: 4px;
-    transition: width 0.1s linear;
-}
-
-/* Custom Animations (Optimized for Performance) */
-
-/* 1. Hardware Accelerated Scale */
-.hover-scale {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform; /* Hint to browser to promote layer */
-}
-
-.hover-scale:hover {
-    transform: scale(1.03);
-}
-
-.active-scale {
-    transition: transform 0.1s ease-out;
-}
-
-.active-scale:active {
-    transform: scale(0.97);
-}
-
-/* 2. Opacity-only Pulse (Cheaper than scale/shadow pulse) */
-@keyframes pulse-opacity {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-}
-
-.pulse-opacity {
-    animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* 3. Smooth Modal Transitions (No Keyframes) */
-.modal-transition {
-    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  from {
+    transform: translateY(30px) scale(0.95);
     opacity: 0;
-    transform: translateY(20px) scale(0.98);
-    pointer-events: none;
-}
-
-.modal-transition.active {
-    opacity: 1;
+  }
+  to {
     transform: translateY(0) scale(1);
-    pointer-events: auto;
+    opacity: 1;
+  }
 }
 
-/* Accessibility - Reduce Motion */
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
-}
+/* ================================
+   📱 Responsive & Accessibility
+   ================================ */
 
-/* Responsive Adjustments */
 @media (max-width: 768px) {
-    .modal {
-        padding: 24px;
-        width: 95%;
-    }
+  .glass {
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+  }
+
+  .modal {
+    padding: var(--spacing-lg);
+    width: 95%;
+  }
 }
 
 @media (max-width: 640px) {
-    .apple-bento {
-        padding: 24px;
-    }
+  body {
+    font-size: 16px;
+  }
 
-    .status-card {
-        padding: 20px;
-    }
+  .large-title {
+    font-size: 28px;
+  }
+
+  .title1 {
+    font-size: 24px;
+  }
+}
+
+/* ================================
+   ♿ Accessibility
+   ================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .glass,
+  .card-inner {
+    border-width: 2px;
+    border-color: currentColor;
+  }
+
+  .instrument-btn.active .card-inner {
+    outline: 3px solid var(--color-primary);
+  }
+}
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ================================
+   🎨 Utility Classes
+   ================================ */
+
+.hidden {
+  display: none !important;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.hover-scale {
+  transition: transform var(--transition-base) var(--ease-ios);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.shadow-glass {
+  box-shadow: var(--shadow-glass);
+}
+
+.shadow-glass-hover {
+  box-shadow: var(--shadow-glass-hover);
+}
+
+/* Scroll sections */
+.scroll-section {
+  scroll-margin-top: 80px;
 }
