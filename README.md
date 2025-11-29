@@ -89,7 +89,7 @@ graph LR
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/Team-Kazoo/mambo.git
+    git clone https://github.com/Team-Kazoo/mambo-whistle.git
     cd mambo
     ```
 
