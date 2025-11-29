@@ -89,8 +89,8 @@ graph LR
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/Team-Kazoo/mambo.git
-    cd mambo
+    git clone https://github.com/Team-Kazoo/mambo-whistle.git
+    cd mambo-whistle
     ```
 
 2.  **Install dependencies**
