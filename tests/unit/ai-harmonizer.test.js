@@ -81,7 +81,12 @@ describe('AiHarmonizer', () => {
 
     const playSpy = vi.spyOn(harmonizer, '_playBacking').mockImplementation(() => {});
 
+    // _generateBackingSequence now uses requestIdleCallback/setTimeout for scheduling
+    // We need to wait for the scheduled callback to complete
     await harmonizer._generateBackingSequence();
+
+    // Wait for the scheduled callback to execute
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(harmonizer.noteBuffer.length).toBeGreaterThan(0);
     expect(continueSpy).toHaveBeenCalled();
