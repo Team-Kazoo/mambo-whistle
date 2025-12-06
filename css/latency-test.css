@@ -1,0 +1,355 @@
+/**
+ * 延迟测试页面样式
+ * 深色主题 + 科技感设计
+ */
+
+/* 基础重置 */
+* {
+    box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(15, 18, 25, 0.5);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.4);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.6);
+}
+
+/* 按钮状态 */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:not(:disabled) {
+    cursor: pointer;
+}
+
+#btn-start-test:not(:disabled) {
+    opacity: 1;
+    cursor: pointer;
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+#btn-start-test:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 40px -10px rgba(6, 182, 212, 0.5);
+}
+
+#btn-start-test:not(:disabled):active {
+    transform: translateY(0);
+}
+
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 0 40px rgba(168, 85, 247, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), 0 0 60px rgba(168, 85, 247, 0.3);
+    }
+}
+
+/* 设备状态指示器 */
+.status-connected {
+    background-color: #22c55e !important;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+    animation: pulse-green 2s ease-in-out infinite;
+}
+
+.status-connecting {
+    background-color: #eab308 !important;
+    animation: pulse-yellow 1s ease-in-out infinite;
+}
+
+.status-error {
+    background-color: #ef4444 !important;
+}
+
+@keyframes pulse-green {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes pulse-yellow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+/* 波形画布容器 */
+.waveform-container {
+    position: relative;
+}
+
+/* 峰值标记 */
+.peak-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.peak-marker-usb {
+    background: linear-gradient(to bottom, 
+        rgba(6, 182, 212, 0.8),
+        rgba(6, 182, 212, 0.2)
+    );
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+}
+
+.peak-marker-mic {
+    background: linear-gradient(to bottom, 
+        rgba(168, 85, 247, 0.8),
+        rgba(168, 85, 247, 0.2)
+    );
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+}
+
+/* 测量结果高亮 */
+.measurement-flash {
+    animation: flash-highlight 0.5s ease-out;
+}
+
+@keyframes flash-highlight {
+    0% {
+        background: rgba(6, 182, 212, 0.3);
+        transform: scale(1.02);
+    }
+    100% {
+        background: transparent;
+        transform: scale(1);
+    }
+}
+
+/* 延迟方向指示 */
+.latency-usb-faster {
+    color: #06b6d4;
+}
+
+.latency-mic-faster {
+    color: #a855f7;
+}
+
+.latency-equal {
+    color: #22c55e;
+}
+
+/* 统计数值动画 */
+.stat-value-update {
+    animation: stat-pop 0.3s ease-out;
+}
+
+@keyframes stat-pop {
+    0% {
+        transform: scale(1.15);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* 历史记录项 */
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(15, 18, 25, 0.3);
+    border: 1px solid rgba(71, 85, 105, 0.2);
+    transition: background 0.2s;
+}
+
+.history-item:hover {
+    background: rgba(15, 18, 25, 0.5);
+}
+
+.history-item-new {
+    animation: slide-in-right 0.3s ease-out;
+    background: rgba(6, 182, 212, 0.1);
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+@keyframes slide-in-right {
+    0% {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 画布渲染优化 */
+canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* 加载状态 */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(4px);
+    border-radius: inherit;
+    z-index: 20;
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(6, 182, 212, 0.2);
+    border-top-color: #06b6d4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 互相关峰值标记 */
+.correlation-peak {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #22c55e;
+    transform: translateX(-50%);
+    z-index: 10;
+}
+
+/* 测试运行指示器 */
+.test-running-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+    font-size: 12px;
+}
+
+.test-running-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* 响应式调整 */
+@media (max-width: 1024px) {
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Range input 样式 */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: rgba(71, 85, 105, 0.3);
+    border-radius: 3px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #06b6d4, #a855f7);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+    transition: transform 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #06b6d4, #a855f7);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+}
+
+/* Select 样式 */
+select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 36px;
+}
+
+select:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+}
+
+/* 工具提示 */
+.tooltip {
+    position: relative;
+}
+
+.tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background: rgba(15, 18, 25, 0.95);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 100;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频延迟测试 - USB vs 普通麦克风</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              mono: ['JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', 'monospace'],
+              display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif']
+            },
+            colors: {
+              midnight: '#0a0a0f',
+              slate: { 850: '#1a1f2e', 900: '#0f1219' },
+              accent: { cyan: '#06b6d4', purple: '#a855f7', pink: '#ec4899' }
+            },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'glow': 'glow 2s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              glow: {
+                '0%': { boxShadow: '0 0 5px rgba(6, 182, 212, 0.3), 0 0 20px rgba(6, 182, 212, 0.1)' },
+                '100%': { boxShadow: '0 0 10px rgba(6, 182, 212, 0.5), 0 0 40px rgba(6, 182, 212, 0.2)' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/latency-test.css">
+</head>
+<body class="bg-midnight min-h-screen text-white font-display antialiased">
+    <!-- 背景网格 -->
+    <div class="fixed inset-0 bg-[linear-gradient(rgba(6,182,212,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none"></div>
+    
+    <!-- 渐变光晕 -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-accent-cyan/10 via-accent-purple/5 to-transparent blur-3xl pointer-events-none"></div>
+
+    <div class="relative z-10 container mx-auto px-6 py-8 max-w-7xl">
+        <!-- 头部 -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-accent-cyan via-accent-purple to-accent-pink bg-clip-text text-transparent">
+                        音频延迟测试
+                    </h1>
+                    <p class="text-slate-400 mt-1">USB 专有设备 vs 普通麦克风 - 端到端延迟对比</p>
+                </div>
+                <a href="index.html" class="px-4 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 transition-colors">
+                    ← 返回主页
+                </a>
+            </div>
+        </header>
+
+        <!-- 主体内容 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- 左侧：控制面板 -->
+            <div class="lg:col-span-1 space-y-6">
+                
+                <!-- 连接状态卡片 -->
+                <div class="bg-slate-850/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-accent-cyan animate-pulse"></span>
+                        设备连接
+                    </h2>
+                    
+                    <!-- USB 设备 -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/30">
+                            <div class="flex items-center gap-3">
+                                <div id="usb-status-indicator" class="w-3 h-3 rounded-full bg-slate-600"></div>
+                                <div>
+                                    <span class="text-sm">USB 音频设备</span>
+                                    <div id="usb-level" class="text-xs text-slate-500 font-mono">RMS: --</div>
+                                </div>
+                            </div>
+                            <button id="btn-connect-usb" class="px-3 py-1.5 text-xs font-medium rounded-md bg-accent-cyan/20 text-accent-cyan hover:bg-accent-cyan/30 transition-colors">
+                                连接
+                            </button>
+                        </div>
+                        
+                        <!-- 普通麦克风 -->
+                        <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900/50 border border-slate-700/30">
+                            <div class="flex items-center gap-3">
+                                <div id="mic-status-indicator" class="w-3 h-3 rounded-full bg-slate-600"></div>
+                                <div>
+                                    <span class="text-sm">普通麦克风</span>
+                                    <div id="mic-level" class="text-xs text-slate-500 font-mono">RMS: --</div>
+                                </div>
+                            </div>
+                            <button id="btn-connect-mic" class="px-3 py-1.5 text-xs font-medium rounded-md bg-accent-purple/20 text-accent-purple hover:bg-accent-purple/30 transition-colors">
+                                连接
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 设备信息 -->
+                    <div id="device-info" class="mt-4 p-3 rounded-lg bg-slate-900/30 text-xs text-slate-500 font-mono hidden">
+                        <div id="usb-info"></div>
+                        <div id="mic-info"></div>
+                    </div>
+                </div>
+
+                <!-- 测试控制 -->
+                <div class="bg-slate-850/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                    <h2 class="text-lg font-semibold mb-4">测试控制</h2>
+                    
+                    <div class="space-y-4">
+                        <button id="btn-start-test" disabled class="w-full py-3 rounded-xl font-semibold text-lg transition-all duration-300 bg-gradient-to-r from-accent-cyan to-accent-purple opacity-50 cursor-not-allowed">
+                            开始测试
+                        </button>
+                        
+                        <button id="btn-stop-test" disabled class="w-full py-2.5 rounded-xl font-medium border border-slate-600 text-slate-400 hover:text-white hover:border-slate-500 transition-colors hidden">
+                            停止测试
+                        </button>
+
+                        <button id="btn-clear-data" class="w-full py-2 rounded-lg text-sm text-slate-500 hover:text-slate-300 transition-colors">
+                            清除数据
+                        </button>
+                    </div>
+
+                    <!-- 测试参数 -->
+                    <div class="mt-6 space-y-4">
+                        <div>
+                            <label class="text-xs text-slate-500 uppercase tracking-wider">检测阈值</label>
+                            <input type="range" id="threshold-slider" min="0.05" max="0.5" step="0.01" value="0.15" 
+                                   class="w-full mt-2 accent-accent-cyan">
+                            <div class="flex justify-between text-xs text-slate-500 mt-1">
+                                <span>灵敏</span>
+                                <span id="threshold-value">0.15</span>
+                                <span>稳定</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs text-slate-500 uppercase tracking-wider">分析窗口</label>
+                            <select id="window-size" class="w-full mt-2 px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-sm focus:outline-none focus:border-accent-cyan">
+                                <option value="256">256ms (快速)</option>
+                                <option value="512" selected>512ms (平衡)</option>
+                                <option value="1024">1024ms (精确)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 统计面板 -->
+                <div class="bg-slate-850/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                    <h2 class="text-lg font-semibold mb-4">延迟统计</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-4 rounded-xl bg-gradient-to-br from-accent-cyan/10 to-transparent border border-accent-cyan/20">
+                            <div id="stat-avg" class="text-2xl font-bold font-mono text-accent-cyan">--</div>
+                            <div class="text-xs text-slate-500 mt-1">平均延迟 (ms)</div>
+                        </div>
+                        <div class="text-center p-4 rounded-xl bg-gradient-to-br from-accent-purple/10 to-transparent border border-accent-purple/20">
+                            <div id="stat-std" class="text-2xl font-bold font-mono text-accent-purple">--</div>
+                            <div class="text-xs text-slate-500 mt-1">标准差 (ms)</div>
+                        </div>
+                        <div class="text-center p-3 rounded-lg bg-slate-900/30">
+                            <div id="stat-min" class="text-lg font-semibold font-mono text-slate-300">--</div>
+                            <div class="text-xs text-slate-500">最小值</div>
+                        </div>
+                        <div class="text-center p-3 rounded-lg bg-slate-900/30">
+                            <div id="stat-max" class="text-lg font-semibold font-mono text-slate-300">--</div>
+                            <div class="text-xs text-slate-500">最大值</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between text-sm">
+                        <span class="text-slate-500">测量次数</span>
+                        <span id="stat-count" class="font-mono text-white">0</span>
+                    </div>
+
+                    <!-- 最近测量值 -->
+                    <div class="mt-4 p-3 rounded-lg bg-slate-900/30 border border-slate-700/30">
+                        <div class="text-xs text-slate-500 mb-2">最近测量</div>
+                        <div id="stat-latest" class="text-3xl font-bold font-mono text-center">
+                            <span class="text-slate-600">--</span>
+                            <span class="text-sm text-slate-500 ml-1">ms</span>
+                        </div>
+                        <div id="latency-direction" class="text-xs text-center mt-2 text-slate-500">
+                            等待测量...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：波形和图表 -->
+            <div class="lg:col-span-2 space-y-6">
+                
+                <!-- 波形显示区 -->
+                <div class="bg-slate-850/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">实时波形</h2>
+                        <div class="flex items-center gap-4 text-xs">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-1 rounded bg-accent-cyan"></div>
+                                <span class="text-slate-400">USB</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-1 rounded bg-accent-purple"></div>
+                                <span class="text-slate-400">麦克风</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- USB 波形 -->
+                    <div class="relative mb-4">
+                        <div class="absolute left-2 top-2 px-2 py-1 rounded text-xs bg-accent-cyan/20 text-accent-cyan font-mono">
+                            USB (48kHz)
+                        </div>
+                        <canvas id="waveform-usb" class="w-full h-32 rounded-lg bg-slate-900/50 border border-slate-700/30"></canvas>
+                        <!-- 峰值标记层 -->
+                        <div id="peak-markers-usb" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+
+                    <!-- 麦克风波形 -->
+                    <div class="relative">
+                        <div class="absolute left-2 top-2 px-2 py-1 rounded text-xs bg-accent-purple/20 text-accent-purple font-mono">
+                            MIC (44.1kHz)
+                        </div>
+                        <canvas id="waveform-mic" class="w-full h-32 rounded-lg bg-slate-900/50 border border-slate-700/30"></canvas>
+                        <!-- 峰值标记层 -->
+                        <div id="peak-markers-mic" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+
+                    <!-- 时间轴 -->
+                    <div class="flex justify-between text-xs text-slate-600 mt-2 px-1">
+                        <span>-500ms</span>
+                        <span>-250ms</span>
+                        <span>现在</span>
+                    </div>
+                </div>
+
+                <!-- 互相关分析 -->
+                <div class="bg-slate-850/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">互相关分析</h2>
+                        <span id="correlation-status" class="text-xs text-slate-500">等待数据...</span>
+                    </div>
+                    <canvas id="correlation-chart" class="w-full h-40 rounded-lg bg-slate-900/50 border border-slate-700/30"></canvas>
+                    <div class="flex justify-between text-xs text-slate-600 mt-2 px-1">
+                        <span>-100ms</span>
+                        <span>0</span>
+                        <span>+100ms</span>
+                    </div>
+                </div>
+
+                <!-- 历史记录图表 -->
+                <div class="bg-slate-850/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold">延迟历史</h2>
+                        <div class="flex items-center gap-2">
+                            <span id="history-count" class="text-xs text-slate-500">0 次测量</span>
+                        </div>
+                    </div>
+                    <canvas id="history-chart" class="w-full h-48 rounded-lg bg-slate-900/50 border border-slate-700/30"></canvas>
+                    
+                    <!-- 历史记录列表 -->
+                    <div id="history-list" class="mt-4 max-h-32 overflow-y-auto space-y-1 text-xs font-mono">
+                        <div class="text-slate-600 text-center py-4">暂无测量数据</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明 -->
+        <footer class="mt-8 text-center text-xs text-slate-600">
+            <p>测试方法：同时敲击桌面或拍手，系统将通过互相关分析检测两路信号的时间差</p>
+            <p class="mt-1">正值表示 USB 设备延迟更低，负值表示普通麦克风延迟更低</p>
+        </footer>
+    </div>
+
+    <!-- 脚本引入 -->
+    <script src="js/usb-audio-receiver.js"></script>
+    <script src="js/latency-tester.js"></script>
+    <script>
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.latencyTester = new LatencyTester();
+            window.latencyTester.init();
+        });
+    </script>
+</body>
+</html>
+
